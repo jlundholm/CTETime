@@ -1,0 +1,80 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<section class="import-panel">
+  <header class="import-header">
+    <h1>Import Users</h1>
+    <a class="button-link button-muted" href="/admin/years/{{ year.id }}">Back to School Year</a>
+  </header>
+
+  <p class="import-context">School year: <strong>{{ year.name }}</strong></p>
+
+  {% if missing_columns %}
+  <p class="inline-error">Missing required column(s): {{ missing_columns|join(", ") }}</p>
+  {% endif %}
+
+  {% if not preview %}
+  <form class="import-upload-form" action="/admin/years/{{ year.id }}/import" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <label for="csv_file">CSV File</label>
+    <input id="csv_file" type="file" name="file" accept=".csv" required />
+    <button type="submit">Upload</button>
+  </form>
+  {% else %}
+  <div class="import-summary">
+    <p>{{ preview.valid_count }} valid rows, {{ preview.error_count }} errors</p>
+    <p>Showing first 10 of {{ preview.total_rows }} rows</p>
+  </div>
+
+  <div class="import-table-wrap">
+    <table class="years-table import-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>PIN</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in preview.rows[:10] %}
+        <tr class="{% if row.errors %}import-row-invalid{% else %}import-row-valid{% endif %}">
+          <td>{{ row.row_num }}</td>
+          <td>{{ row.pin or "" }}</td>
+          <td>{{ row.first_name }}</td>
+          <td>{{ row.last_name }}</td>
+          <td>{{ row.email or "" }}</td>
+          <td>{{ row.role|capitalize }}</td>
+          <td>
+            {% if row.errors %}
+            <span class="status-warning">⚠ {{ row.errors|join("; ") }}</span>
+            {% else %}
+            <span class="status-ok">✔ Valid</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="import-actions">
+    <form action="/admin/years/{{ year.id }}/import/confirm" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <label class="checkbox-inline">
+        <input type="checkbox" name="skip_invalid" checked /> Skip invalid rows
+      </label>
+      <button type="submit">Confirm Import</button>
+    </form>
+
+    <form action="/admin/years/{{ year.id }}/import/cancel" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <button type="submit" class="button-secondary">Cancel</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

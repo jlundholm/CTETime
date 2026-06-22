@@ -1,0 +1,103 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<section class="year-card">
+  <header class="import-header">
+    <h1>Create User</h1>
+    <a class="button-link button-muted" href="/admin/years/{{ year.id }}">Back to School Year</a>
+  </header>
+
+  <p class="import-context">School year: <strong>{{ year.name }}</strong></p>
+
+  {% if errors and errors.form %}
+  <p class="inline-error">{{ errors.form }}</p>
+  {% endif %}
+
+  <form class="year-form" action="/admin/years/{{ year.id }}/users/create" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+    <label for="role">Role</label>
+    <select id="role" name="role" required>
+      <option value="student" {% if values.role == "student" %}selected{% endif %}>Student</option>
+      <option value="teacher" {% if values.role == "teacher" %}selected{% endif %}>Teacher</option>
+    </select>
+    {% if errors and errors.role %}
+    <p class="inline-error">{{ errors.role }}</p>
+    {% endif %}
+
+    <label for="first_name">First Name</label>
+    <input id="first_name" name="first_name" value="{{ values.first_name }}" required maxlength="100" />
+    {% if errors and errors.first_name %}
+    <p class="inline-error">{{ errors.first_name }}</p>
+    {% endif %}
+
+    <label for="last_name">Last Name</label>
+    <input id="last_name" name="last_name" value="{{ values.last_name }}" required maxlength="100" />
+    {% if errors and errors.last_name %}
+    <p class="inline-error">{{ errors.last_name }}</p>
+    {% endif %}
+
+    <label for="email">Email (optional)</label>
+    <input id="email" name="email" type="email" value="{{ values.email }}" maxlength="255" />
+    {% if errors and errors.email %}
+    <p class="inline-error">{{ errors.email }}</p>
+    {% endif %}
+
+    <div id="student-fields">
+      <label for="pin">PIN</label>
+      <div class="inline-input-actions">
+        <input id="pin" name="pin" value="{{ values.pin }}" maxlength="6" pattern="[0-9]{6}" />
+        <button type="button" class="button-secondary" id="generate-pin">Generate</button>
+      </div>
+      {% if errors and errors.pin %}
+      <p class="inline-error">{{ errors.pin }}</p>
+      {% endif %}
+    </div>
+
+    <div id="teacher-fields">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" minlength="8" />
+      <p class="import-context">Use at least 8 characters.</p>
+      {% if errors and errors.password %}
+      <p class="inline-error">{{ errors.password }}</p>
+      {% endif %}
+    </div>
+
+    <div class="year-form-actions">
+      <button type="submit">Create User</button>
+      <a class="button-link button-muted" href="/admin/years/{{ year.id }}">Cancel</a>
+    </div>
+  </form>
+</section>
+
+<script>
+  (() => {
+    const roleSelect = document.getElementById("role");
+    const studentFields = document.getElementById("student-fields");
+    const teacherFields = document.getElementById("teacher-fields");
+    const pinInput = document.getElementById("pin");
+    const passwordInput = document.getElementById("password");
+    const generatePinButton = document.getElementById("generate-pin");
+
+    function randomPin() {
+      return Math.floor(Math.random() * 1000000).toString().padStart(6, "0");
+    }
+
+    function toggleFields() {
+      const isStudent = roleSelect.value === "student";
+      studentFields.style.display = isStudent ? "block" : "none";
+      teacherFields.style.display = isStudent ? "none" : "block";
+
+      pinInput.required = isStudent;
+      passwordInput.required = !isStudent;
+    }
+
+    generatePinButton.addEventListener("click", () => {
+      pinInput.value = randomPin();
+    });
+
+    roleSelect.addEventListener("change", toggleFields);
+    toggleFields();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">CTE Time</div>
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard">Dashboard</a>
+    </nav>
+  </aside>
+  <main class="admin-content">
+    {% block admin_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

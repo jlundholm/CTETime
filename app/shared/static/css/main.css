@@ -1,0 +1,429 @@
+:root {
+  --color-background: #161b22;
+  --color-surface: #1c2333;
+  --color-surface-raised: #21283b;
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-accent-primary: #58a6ff;
+  --color-accent-secondary: #79c0ff;
+  --color-success: #3fb950;
+  --color-warning: #d29922;
+  --color-error: #f85149;
+  --color-border: #30363d;
+  --color-border-hover: #484f58;
+  --color-clock-in: #3fb950;
+  --color-clock-out: #f85149;
+  --color-input-bg: #0d1117;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+
+  --rounded-sm: 4px;
+  --rounded-md: 6px;
+  --rounded-lg: 8px;
+  --rounded-xl: 12px;
+  --rounded-full: 9999px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: radial-gradient(circle at top, #232c41 0%, var(--color-background) 40%);
+  color: var(--color-text-primary);
+}
+
+a {
+  color: var(--color-accent-secondary);
+}
+
+.flash {
+  margin: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--rounded-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.flash-error {
+  border-color: var(--color-error);
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-lg);
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  padding: var(--spacing-xl);
+  background: var(--color-surface);
+  border-radius: var(--rounded-xl);
+  border: 1px solid var(--color-border);
+}
+
+.auth-title {
+  margin-top: 0;
+}
+
+.auth-subtitle {
+  color: var(--color-text-secondary);
+}
+
+.auth-form {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+input,
+select,
+button {
+  border-radius: var(--rounded-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-input-bg);
+  color: var(--color-text-primary);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: linear-gradient(180deg, var(--color-accent-primary), #3f8ae0);
+  color: #09101a;
+  font-weight: 700;
+}
+
+.button-secondary {
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.admin-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+.sidebar {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: var(--spacing-lg);
+}
+
+.sidebar-brand {
+  font-weight: 700;
+  margin-bottom: var(--spacing-xl);
+}
+
+.sidebar-nav a {
+  display: block;
+  padding: var(--spacing-sm);
+  border-radius: var(--rounded-md);
+  text-decoration: none;
+}
+
+.sidebar-nav a:hover {
+  background: var(--color-surface-raised);
+}
+
+.admin-content {
+  padding: var(--spacing-xl);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--rounded-md);
+  border: 1px solid var(--color-border);
+  background: linear-gradient(180deg, var(--color-accent-primary), #3f8ae0);
+  color: #09101a;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 10px 12px;
+}
+
+.button-muted {
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.years-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--spacing-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-md);
+  overflow: hidden;
+}
+
+.years-table th,
+.years-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.years-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--rounded-full);
+  border: 1px solid var(--color-border);
+  padding: 2px 10px;
+  font-size: 0.85rem;
+}
+
+.status-active {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.status-ended {
+  color: var(--color-text-secondary);
+}
+
+.empty-state {
+  margin-top: var(--spacing-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.year-card {
+  max-width: 640px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-lg);
+  background: var(--color-surface);
+  padding: var(--spacing-xl);
+}
+
+.year-form {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.year-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.year-details {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.year-details dt {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.year-details dd {
+  margin: 0;
+}
+
+.year-form-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  align-items: center;
+}
+
+.inline-input-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.teacher-list-card {
+  max-width: 100%;
+  margin-top: var(--spacing-lg);
+}
+
+.purge-section {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--color-error);
+  border-radius: var(--rounded-lg);
+}
+
+.purge-form {
+  display: grid;
+  gap: var(--spacing-sm);
+  max-width: 480px;
+}
+
+.inline-error {
+  color: var(--color-error);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.danger {
+  background: linear-gradient(180deg, var(--color-error), #cc3f3a);
+  color: #fff;
+}
+
+.import-panel {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.import-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.import-context {
+  color: var(--color-text-secondary);
+}
+
+.import-upload-form {
+  display: grid;
+  gap: var(--spacing-sm);
+  max-width: 480px;
+}
+
+.import-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.import-table-wrap {
+  overflow-x: auto;
+}
+
+.import-table {
+  min-width: 860px;
+}
+
+.import-row-invalid {
+  border-left: 3px solid var(--color-error);
+}
+
+.import-row-valid {
+  border-left: 3px solid var(--color-success);
+}
+
+.status-warning {
+  color: var(--color-error);
+}
+
+.status-ok {
+  color: var(--color-success);
+}
+
+.import-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-right: var(--spacing-sm);
+}
+
+.school-year-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.school-year-list li {
+  display: grid;
+  gap: var(--spacing-xs);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .admin-layout {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .dashboard-actions {
+    width: 100%;
+  }
+
+  .button-link {
+    width: 100%;
+  }
+
+  .year-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .import-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sidebar-brand {
+    display: none;
+  }
+
+  .sidebar-nav a {
+    text-indent: -9999px;
+    position: relative;
+  }
+
+  .sidebar-nav a::after {
+    content: "D";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-indent: 0;
+  }
+}

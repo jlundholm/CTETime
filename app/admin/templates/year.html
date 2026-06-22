@@ -1,0 +1,148 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+{% if mode == "create" %}
+<section class="year-card">
+  <h1>Create School Year</h1>
+  {% if errors and errors.form %}
+  <p class="inline-error">{{ errors.form }}</p>
+  {% endif %}
+  <form class="year-form" action="/admin/years/create" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+    <label for="name">Name</label>
+    <input id="name" name="name" value="{{ values.name }}" required />
+    {% if errors and errors.name %}
+    <p class="inline-error">{{ errors.name }}</p>
+    {% endif %}
+
+    <label for="start_date">Start Date</label>
+    <input id="start_date" name="start_date" type="date" value="{{ values.start_date }}" required />
+
+    <label for="end_date">End Date</label>
+    <input id="end_date" name="end_date" type="date" value="{{ values.end_date }}" required />
+    {% if errors and errors.dates %}
+    <p class="inline-error">{{ errors.dates }}</p>
+    {% endif %}
+
+    <div class="year-form-actions">
+      <button type="submit">Create School Year</button>
+      <a class="button-link button-muted" href="/admin/dashboard">Cancel</a>
+    </div>
+  </form>
+</section>
+{% else %}
+<section class="year-card">
+  <header class="year-card-header">
+    <h1>{{ year.name }}</h1>
+    <span class="status-badge status-{{ year.status }}">{{ year.status|capitalize }}</span>
+  </header>
+
+  <dl class="year-details">
+    <div>
+      <dt>Start Date</dt>
+      <dd>{{ year.start_date }}</dd>
+    </div>
+    <div>
+      <dt>End Date</dt>
+      <dd>{{ year.end_date }}</dd>
+    </div>
+  </dl>
+
+  <div class="year-form-actions">
+    <a class="button-link button-muted" href="/admin/dashboard">Back to Dashboard</a>
+    {% if year.status == "active" %}
+    <a class="button-link" href="/admin/years/{{ year.id }}/import">Import Users</a>
+    <a class="button-link" href="/admin/years/{{ year.id }}/users/create">Create User</a>
+    <form action="/admin/years/{{ year.id }}/end" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <button type="submit" class="danger">End School Year</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="year-card teacher-list-card">
+  <header class="year-card-header">
+    <h2>Teachers</h2>
+  </header>
+  {% if teachers %}
+  <div class="import-table-wrap">
+    <table class="years-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for teacher in teachers %}
+        <tr>
+          <td>{{ teacher.first_name }} {{ teacher.last_name }}</td>
+          <td>{{ teacher.email or "" }}</td>
+          <td>
+            {% if teacher.is_active %}
+            <span class="status-badge status-active">Active</span>
+            {% else %}
+            <span class="status-badge status-ended">Deactivated</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if teacher.is_active %}
+            <form action="/admin/years/{{ year.id }}/teachers/{{ teacher.id }}/deactivate" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+              <button type="submit" class="button-secondary">Deactivate</button>
+            </form>
+            {% else %}
+            <span class="status-ended">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="import-context">No teachers yet for this school year.</p>
+  {% endif %}
+</section>
+{% if year.status == "ended" %}
+<section class="purge-section">
+  <header class="year-card-header">
+    <h3>Danger Zone</h3>
+  </header>
+  <p class="import-context">Permanently delete all data for this school year. This action cannot be undone.</p>
+  {% if flush_error %}
+  <p class="inline-error">{{ flush_error }}</p>
+  {% endif %}
+  <form class="purge-form" action="/admin/years/{{ year.id }}/purge" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <label for="confirmation">Type <strong>DELETE</strong> to confirm:</label>
+    <div class="inline-input-actions">
+      <input id="confirmation" name="confirmation" type="text" placeholder="Type DELETE" required />
+      <button type="submit" class="danger" id="purge-submit" disabled>Purge Data</button>
+    </div>
+    <a class="button-link button-muted" href="/admin/years/{{ year.id }}">Cancel</a>
+  </form>
+</section>
+<script>
+  (() => {
+    const confirmationInput = document.getElementById("confirmation");
+    const purgeSubmit = document.getElementById("purge-submit");
+    if (!confirmationInput || !purgeSubmit) {
+      return;
+    }
+
+    const updateState = () => {
+      purgeSubmit.disabled = confirmationInput.value !== "DELETE";
+    };
+
+    confirmationInput.addEventListener("input", updateState);
+    updateState();
+  })();
+</script>
+{% endif %}
+{% endif %}
+{% endblock %}

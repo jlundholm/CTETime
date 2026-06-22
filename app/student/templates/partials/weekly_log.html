@@ -1,0 +1,30 @@
+{% if weekly_log %}
+<div class="weekly-log-wrapper{% if weekly_log|length > 7 %} weekly-log-scrollable{% endif %}">
+  <table class="weekly-log-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Clock In</th>
+        <th>Clock Out</th>
+        <th class="text-right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in weekly_log %}
+      <tr>
+        <td>{{ entry.date }}</td>
+        <td>{{ entry.clock_in }}</td>
+        <td>{{ entry.clock_out }}</td>
+        <td class="text-right mono">{{ entry.daily_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="week-total-row">
+        <td colspan="3">Week Total</td>
+        <td class="text-right mono">{{ week_total }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endif %}

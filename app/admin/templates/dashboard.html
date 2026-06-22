@@ -1,0 +1,46 @@
+{% extends "admin_base.html" %}
+
+{% block admin_content %}
+<section class="dashboard-panel">
+  <header class="dashboard-header">
+    <h1>Welcome, {{ admin_name }}</h1>
+    <div class="dashboard-actions">
+      <a class="button-link" href="/admin/years/create">Create School Year</a>
+      <form action="/auth/logout" method="post">
+        <button type="submit" class="button-secondary">Log Out</button>
+      </form>
+    </div>
+  </header>
+
+  <h2>School Years</h2>
+  {% if school_years %}
+  <table class="years-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for year in school_years %}
+      <tr>
+        <td><a href="/admin/years/{{ year.id }}">{{ year.name }}</a></td>
+        <td>{{ year.start_date }}</td>
+        <td>{{ year.end_date }}</td>
+        <td>
+          <span class="status-badge status-{{ year.status }}">{{ year.status|capitalize }}</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>No school years set up.</p>
+    <a class="button-link" href="/admin/years/create">Create School Year</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

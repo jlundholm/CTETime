@@ -1,0 +1,38 @@
+{% extends "student_base.html" %}
+
+{% block student_content %}
+<section class="student-login-card" data-student-login>
+  <h1 class="student-login-title">Enter PIN</h1>
+  <input
+    id="pin-display"
+    class="pin-input"
+    type="text"
+    readonly
+    inputmode="numeric"
+    autocomplete="off"
+    aria-label="PIN input"
+    value=""
+  />
+  <p id="error-message" class="pin-message pin-message-error" aria-live="polite">{{ error_message }}</p>
+  <p id="guidance-message" class="pin-message pin-message-guidance" aria-live="polite">{{ guidance_message }}</p>
+
+  <div class="keypad-grid" role="group" aria-label="Numeric keypad">
+    <button type="button" class="keypad-key" data-key="1" aria-label="1">1</button>
+    <button type="button" class="keypad-key" data-key="2" aria-label="2">2</button>
+    <button type="button" class="keypad-key" data-key="3" aria-label="3">3</button>
+    <button type="button" class="keypad-key" data-key="4" aria-label="4">4</button>
+    <button type="button" class="keypad-key" data-key="5" aria-label="5">5</button>
+    <button type="button" class="keypad-key" data-key="6" aria-label="6">6</button>
+    <button type="button" class="keypad-key" data-key="7" aria-label="7">7</button>
+    <button type="button" class="keypad-key" data-key="8" aria-label="8">8</button>
+    <button type="button" class="keypad-key" data-key="9" aria-label="9">9</button>
+    <button type="button" class="keypad-key keypad-key-action" data-action="backspace" aria-label="Backspace">⌫</button>
+    <button type="button" class="keypad-key" data-key="0" aria-label="0">0</button>
+    <button type="button" class="keypad-key keypad-key-enter" data-action="enter" aria-label="Enter" disabled>→</button>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/keypad.js" defer></script>
+{% endblock %}

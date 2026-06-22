@@ -1,0 +1,257 @@
+.student-portal {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+}
+
+.student-login-card {
+  width: min(400px, 100%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-xl);
+  padding: var(--spacing-xl);
+}
+
+.student-login-title {
+  margin: 0 0 var(--spacing-md);
+  text-align: center;
+}
+
+.pin-input {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  text-align: center;
+}
+
+.pin-input.pin-input-error {
+  border-color: var(--color-error);
+}
+
+.pin-message {
+  margin: var(--spacing-sm) 0 0;
+  min-height: 1.2em;
+  text-align: center;
+}
+
+.pin-message-error {
+  color: var(--color-error);
+}
+
+.pin-message-guidance {
+  color: var(--color-warning);
+}
+
+.keypad-grid {
+  margin: var(--spacing-lg) auto 0;
+  max-width: 280px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.keypad-key {
+  min-height: 52px;
+  border-radius: var(--rounded-lg);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.keypad-key-action {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.keypad-key-enter {
+  background: linear-gradient(180deg, var(--color-accent-primary), #3f8ae0);
+  color: #09101a;
+}
+
+.keypad-key-enter:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.clock-screen {
+  width: min(400px, 100%);
+}
+
+.clock-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-sm);
+}
+
+.logout-form {
+  margin: 0;
+}
+
+.logout-link {
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.logout-link:hover {
+  color: var(--color-text-primary);
+}
+
+.clock-buttons {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.clock-button {
+  width: 100%;
+  border: 0;
+  border-radius: var(--rounded-lg);
+  padding: 16px;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.clock-button-label {
+  display: block;
+}
+
+.clock-time {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.clock-in {
+  background: linear-gradient(180deg, var(--color-clock-in), #2e8f3d);
+  color: #09101a;
+}
+
+.clock-out {
+  background: linear-gradient(180deg, var(--color-clock-out), #c93e38);
+  color: #ffffff;
+}
+
+.clock-button.disabled,
+.clock-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.clock-message {
+  min-height: 1.4em;
+  margin-top: var(--spacing-md);
+  text-align: center;
+}
+
+.clock-message-error {
+  color: var(--color-error);
+}
+
+#weekly-log-container {
+  margin-top: var(--spacing-lg);
+}
+
+.weekly-log-wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-md);
+  overflow: hidden;
+}
+
+.weekly-log-scrollable {
+  max-height: 19rem;
+  overflow-y: auto;
+}
+
+.weekly-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.weekly-log-table th,
+.weekly-log-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.weekly-log-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface-raised);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.weekly-log-table tfoot td {
+  font-weight: 700;
+  border-bottom: 0;
+}
+
+.week-total-row td {
+  background: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(63, 185, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(63, 185, 80, 0);
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(248, 81, 73, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 81, 73, 0);
+  }
+}
+
+.pulse-in {
+  animation: pulse-green 500ms ease-out;
+}
+
+.pulse-out {
+  animation: pulse-red 500ms ease-out;
+}
+
+@media (max-width: 480px) {
+  .student-login-card {
+    padding: var(--spacing-lg);
+  }
+}

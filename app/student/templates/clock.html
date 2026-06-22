@@ -1,0 +1,47 @@
+{% extends "student_base.html" %}
+
+{% block student_content %}
+<section class="student-login-card clock-screen" data-clock-screen>
+  <div class="clock-header">
+    <form method="post" action="/auth/student/logout" class="logout-form">
+      <button type="submit" class="logout-link">Log Out</button>
+    </form>
+  </div>
+
+  <div class="clock-buttons">
+    <button
+      id="clock-in-btn"
+      class="clock-button clock-in{% if in_session %} disabled{% endif %}"
+      type="button"
+      data-action="clock-in"
+      {% if in_session %}disabled{% endif %}
+      aria-label="Clock In"
+    >
+      <span class="clock-button-label">Clock In</span>
+      <span class="clock-time" id="clock-in-time">Clock In · {{ current_time }}</span>
+    </button>
+
+    <button
+      id="clock-out-btn"
+      class="clock-button clock-out{% if not in_session %} disabled{% endif %}"
+      type="button"
+      data-action="clock-out"
+      {% if not in_session %}disabled{% endif %}
+      aria-label="Clock Out"
+    >
+      <span class="clock-button-label">Clock Out</span>
+      <span class="clock-time" id="clock-out-time">Clock Out · {{ current_time }}</span>
+    </button>
+  </div>
+
+  <p id="clock-message" class="clock-message" aria-live="polite"></p>
+
+  <div id="weekly-log-container">
+    {% include "partials/weekly_log.html" %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/clock.js" defer></script>
+{% endblock %}
