@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="teacher-layout">
+  <aside class="teacher-sidebar">
+    <div class="teacher-sidebar-brand">CTE Time</div>
+    <nav class="teacher-sidebar-nav">
+      <a href="/teacher/dashboard"{% if active_page == "dashboard" %} class="active"{% endif %}>Dashboard</a>
+    </nav>
+    <form method="post" action="/auth/teacher/logout" class="teacher-logout-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <button type="submit" class="teacher-logout-button">Log Out</button>
+    </form>
+  </aside>
+  <main class="teacher-content">
+    {% block teacher_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

@@ -5,7 +5,14 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
 
-from app.auth.staff import authenticate_admin, create_session, destroy_session
+from app.auth.staff import (
+    authenticate_admin,
+    authenticate_teacher,
+    create_session,
+    create_teacher_session,
+    destroy_session,
+    destroy_teacher_session,
+)
 from app.auth.student import create_student_session, destroy_student_session, verify_student_pin
 from app.config import get_settings
 from app.shared.helpers import flash, validate_csrf_token
@@ -19,6 +26,7 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
     try:
         validate_csrf_token(request, csrf_token)
     except HTTPException:
+        flash(request, "Session expired. Please try again.", "error")
         return RedirectResponse(url="/admin/login", status_code=303)
 
     settings = get_settings()
@@ -71,3 +79,40 @@ async def student_login(request: Request, pin: str = Form(...)):
 async def student_logout(request: Request):
     destroy_student_session(request.session)
     return RedirectResponse(url="/student/login", status_code=303)
+
+
+@router.post("/teacher/login")
+async def teacher_login(
+    request: Request,
+    email: str = Form(""),
+    password: str = Form(""),
+    csrf_token: str = Form(...),
+):
+    try:
+        validate_csrf_token(request, csrf_token)
+    except HTTPException:
+        flash(request, "Session expired. Please try again.", "error")
+        return RedirectResponse(url="/teacher/login", status_code=303)
+
+    settings = get_settings()
+    auth_result = await authenticate_teacher(settings.database_path, email, password)
+
+    if not auth_result:
+        flash(request, "Invalid email or password.", "error")
+        return RedirectResponse(url="/teacher/login", status_code=303)
+
+    create_teacher_session(request.session, auth_result)
+    return RedirectResponse(url="/teacher/dashboard", status_code=303)
+
+
+@router.post("/teacher/logout")
+async def teacher_logout(request: Request, csrf_token: str = Form(...)):
+    try:
+        validate_csrf_token(request, csrf_token)
+    except HTTPException:
+        flash(request, "Session expired. Please try again.", "error")
+        return RedirectResponse(url="/teacher/dashboard", status_code=303)
+
+    destroy_teacher_session(request.session)
+    flash(request, "Logged out.", "success")
+    return RedirectResponse(url="/teacher/login", status_code=303)

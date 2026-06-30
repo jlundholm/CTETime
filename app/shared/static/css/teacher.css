@@ -1,0 +1,126 @@
+.teacher-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+.teacher-sidebar {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.teacher-sidebar-brand {
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+}
+
+.teacher-sidebar-nav a {
+  display: block;
+  padding: var(--spacing-sm);
+  border-radius: var(--rounded-md);
+  text-decoration: none;
+}
+
+.teacher-sidebar-nav a:hover {
+  background: var(--color-surface-raised);
+}
+
+.teacher-logout-form {
+  margin-top: auto;
+}
+
+.teacher-logout-button {
+  width: 100%;
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.teacher-content {
+  padding: var(--spacing-xl);
+}
+
+.teacher-login-shell {
+  display: grid;
+  place-items: center;
+}
+
+.teacher-login-card {
+  width: min(420px, 100%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-xl);
+  padding: var(--spacing-xl);
+}
+
+.teacher-login-form {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.teacher-dashboard-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.teacher-classes-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.teacher-classes-table th,
+.teacher-classes-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.teacher-empty-state {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .teacher-layout {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .teacher-sidebar-brand {
+    display: none;
+  }
+
+  .teacher-sidebar-nav a {
+    text-indent: -9999px;
+    position: relative;
+  }
+
+  .teacher-sidebar-nav a::after {
+    content: "D";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-indent: 0;
+  }
+
+  .teacher-logout-button {
+    padding: 10px 0;
+    text-indent: -9999px;
+    position: relative;
+  }
+
+  .teacher-logout-button::after {
+    content: "L";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-indent: 0;
+  }
+}

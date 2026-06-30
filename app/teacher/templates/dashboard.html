@@ -1,0 +1,32 @@
+{% extends "teacher_base.html" %}
+
+{% block teacher_content %}
+<header class="teacher-dashboard-header">
+  <h1>My Classes</h1>
+  <a href="#" class="button button-primary">Create Class</a>
+</header>
+
+{% if classes %}
+<table class="teacher-classes-table">
+  <thead>
+    <tr>
+      <th>Class Name</th>
+      <th>Students</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for class_row in classes %}
+    <tr>
+      <td>{{ class_row.name }}</td>
+      <td>{{ class_row.student_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="teacher-empty-state">
+  <p>No classes yet. Create one to get started.</p>
+  <a href="#" class="button button-primary">Create Class</a>
+</div>
+{% endif %}
+{% endblock %}

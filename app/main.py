@@ -10,6 +10,7 @@ from app.auth.routes import router as auth_router
 from app.config import get_settings
 from app.database import run_migrations
 from app.student.routes import router as student_router
+from app.teacher.routes import router as teacher_router
 
 
 @asynccontextmanager
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(admin_router)
     app.include_router(student_router)
+    app.include_router(teacher_router)
 
     return app
 
