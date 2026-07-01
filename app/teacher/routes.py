@@ -7,7 +7,7 @@ from typing import Any
 
 import aiosqlite
 from fastapi import APIRouter, Form, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
@@ -584,6 +584,103 @@ async def export_student_csv(
     response = Response(content=output.getvalue(), media_type="text/csv")
     response.headers["Content-Disposition"] = f'attachment; filename="student-{student_id}-punches.csv"'
     return response
+
+
+@router.post("/students/{student_id}/manual-punch")
+async def manual_punch(
+    request: Request,
+    student_id: int,
+    punch_type: str = Form(...),
+    timestamp: str = Form(...),
+    csrf_token: str = Form(...),
+):
+    if not require_teacher(request):
+        return JSONResponse({"success": False, "error": "unauthorized"}, status_code=401)
+
+    teacher_id = request.session.get("teacher_id")
+    school_year_id = request.session.get("school_year_id")
+    if teacher_id is None or school_year_id is None:
+        return JSONResponse({"success": False, "error": "unauthorized"}, status_code=401)
+
+    try:
+        validate_csrf_token(request, csrf_token)
+    except HTTPException:
+        return JSONResponse({"success": False, "error": "Invalid form submission."}, status_code=403)
+
+    if punch_type not in {"clock_in", "clock_out"}:
+        return JSONResponse({"success": False, "error": "Invalid punch type."}, status_code=400)
+
+    try:
+        parsed_timestamp = datetime.fromisoformat(timestamp)
+    except (TypeError, ValueError):
+        return JSONResponse({"success": False, "error": "Invalid timestamp format."}, status_code=400)
+
+    punch_timestamp = (
+        parsed_timestamp.replace(tzinfo=timezone.utc)
+        if parsed_timestamp.tzinfo is None
+        else parsed_timestamp.astimezone(timezone.utc)
+    )
+
+    settings = get_settings()
+    try:
+        async with aiosqlite.connect(settings.database_path) as connection:
+            connection.row_factory = aiosqlite.Row
+
+            async with connection.execute(
+                (
+                    "SELECT DISTINCT s.id "
+                    "FROM students s "
+                    "JOIN enrollments e ON e.student_id = s.id "
+                    "JOIN classes c ON c.id = e.class_id "
+                    "WHERE s.id = ? AND s.school_year_id = ? AND c.teacher_id = ?"
+                ),
+                (student_id, school_year_id, teacher_id),
+            ) as student_cursor:
+                student_row = await student_cursor.fetchone()
+
+            if student_row is None:
+                return JSONResponse({"success": False, "error": "Student not found."}, status_code=404)
+
+            async with connection.execute(
+                (
+                    "SELECT id, clock_in_time FROM punches "
+                    "WHERE student_id = ? AND school_year_id = ? AND clock_out_time IS NULL "
+                    "ORDER BY clock_in_time DESC LIMIT 1"
+                ),
+                (student_id, school_year_id),
+            ) as open_cursor:
+                open_punch = await open_cursor.fetchone()
+
+            if punch_type == "clock_in":
+                if open_punch:
+                    return JSONResponse(
+                        {
+                            "success": False,
+                            "error": f"Student is already clocked in since {open_punch['clock_in_time']}.",
+                        }
+                    )
+
+                await connection.execute(
+                    "INSERT INTO punches (student_id, clock_in_time, manual, school_year_id) VALUES (?, ?, 1, ?)",
+                    (student_id, punch_timestamp.isoformat(), school_year_id),
+                )
+            else:
+                if not open_punch:
+                    return JSONResponse({"success": False, "error": "Student is not clocked in."})
+
+                update_cursor = await connection.execute(
+                    "UPDATE punches SET clock_out_time = ?, manual = 1 WHERE id = ? AND clock_out_time IS NULL",
+                    (punch_timestamp.isoformat(), open_punch["id"]),
+                )
+                if update_cursor.rowcount == 0:
+                    return JSONResponse({"success": False, "error": "Student is not clocked in."})
+
+            await connection.commit()
+    except Exception:
+        logger.exception("Failed to record manual punch")
+        return JSONResponse({"success": False, "error": "Couldn't record punch. Try again."}, status_code=500)
+
+    return JSONResponse({"success": True})
 
 
 @router.post("/classes/{class_id}/rename")

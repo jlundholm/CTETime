@@ -218,6 +218,39 @@
   text-align: center;
 }
 
+.teacher-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+}
+
+.teacher-modal {
+  width: min(460px, calc(100vw - 2rem));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-lg);
+}
+
+.teacher-modal h2 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+}
+
+.teacher-modal-error {
+  margin: 0;
+  color: var(--color-error);
+}
+
+.teacher-modal-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
 @media (max-width: 768px) {
   .teacher-layout {
     grid-template-columns: 72px 1fr;

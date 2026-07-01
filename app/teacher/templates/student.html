@@ -7,6 +7,7 @@
     <p class="teacher-detail-subtitle">Student punch history</p>
   </div>
   <div class="teacher-detail-actions">
+    <button type="button" class="button" id="manual-punch-open">Manual Punch</button>
     <a href="/teacher/students/{{ student.id }}/export?from={{ from_date }}&to={{ to_date }}" class="button button-secondary">Export CSV</a>
   </div>
 </header>
@@ -57,4 +58,114 @@
   <p>No punches for {{ student.first_name }} this year.</p>
 </div>
 {% endif %}
+
+<div id="manual-punch-modal" class="teacher-modal-overlay" hidden>
+  <div class="teacher-modal" role="dialog" aria-modal="true" aria-labelledby="manual-punch-title">
+    <h2 id="manual-punch-title">Manual Punch</h2>
+    <form id="manual-punch-form" class="teacher-inline-form-grid" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <label for="manual-student">Student</label>
+      <input id="manual-student" type="text" value="{{ student.first_name }} {{ student.last_name }}" readonly />
+
+      <label for="manual-punch-type">Punch Type</label>
+      <select id="manual-punch-type" name="punch_type">
+        <option value="clock_in">Clock In</option>
+        <option value="clock_out">Clock Out</option>
+      </select>
+
+      <label for="manual-timestamp">Timestamp</label>
+      <input id="manual-timestamp" type="datetime-local" name="timestamp" required />
+
+      <p id="manual-punch-error" class="teacher-modal-error" hidden></p>
+
+      <div class="teacher-modal-actions">
+        <button type="submit" class="button">Save</button>
+        <button type="button" class="button button-secondary" id="manual-punch-cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const openButton = document.getElementById("manual-punch-open");
+    const cancelButton = document.getElementById("manual-punch-cancel");
+    const modal = document.getElementById("manual-punch-modal");
+    const form = document.getElementById("manual-punch-form");
+    const errorEl = document.getElementById("manual-punch-error");
+    const timestampInput = document.getElementById("manual-timestamp");
+
+    if (!openButton || !cancelButton || !modal || !form || !errorEl || !timestampInput) {
+      return;
+    }
+
+    const showError = function (message) {
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+    };
+
+    const clearError = function () {
+      errorEl.textContent = "";
+      errorEl.hidden = true;
+    };
+
+    const closeModal = function () {
+      modal.hidden = true;
+      clearError();
+    };
+
+    const openModal = function () {
+      form.reset();
+      timestampInput.value = new Date().toISOString().slice(0, 16);
+      clearError();
+      modal.hidden = false;
+      timestampInput.focus();
+    };
+
+    openButton.addEventListener("click", openModal);
+    cancelButton.addEventListener("click", closeModal);
+
+    modal.addEventListener("click", function (event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !modal.hidden) {
+        closeModal();
+      }
+    });
+
+    form.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+      }
+    });
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      clearError();
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch("/teacher/students/{{ student.id }}/manual-punch", {
+          method: "POST",
+          body: formData,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+          showError(payload.error || "Couldn't record punch. Try again.");
+          return;
+        }
+        window.location.reload();
+      } catch {
+        showError("Couldn't record punch. Try again.");
+      }
+    });
+  })();
+</script>
 {% endblock %}

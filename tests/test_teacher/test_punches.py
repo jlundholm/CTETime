@@ -110,6 +110,18 @@ async def add_punch(
         await connection.commit()
 
 
+async def get_student_punches(*, student_id: int) -> list[dict]:
+    settings = get_settings()
+    async with aiosqlite.connect(settings.database_path) as connection:
+        connection.row_factory = aiosqlite.Row
+        async with connection.execute(
+            "SELECT id, clock_in_time, clock_out_time, manual FROM punches WHERE student_id = ? ORDER BY id",
+            (student_id,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+    return [dict(row) for row in rows]
+
+
 @pytest.mark.asyncio
 async def test_class_detail_table_shows_time_columns_and_pin(client, teacher_session):
     class_id = await create_class(
@@ -303,3 +315,194 @@ async def test_student_csv_export(client, teacher_session):
     assert response.headers["content-type"].startswith("text/csv")
     assert "Eli,Export" in response.text
     assert ",Yes" in response.text
+
+
+@pytest.mark.asyncio
+async def test_manual_clock_in_creates_manual_punch(client, teacher_session):
+    class_id = await create_class(
+        teacher_id=teacher_session["teacher_id"],
+        school_year_id=teacher_session["school_year_id"],
+        name="Period 7",
+    )
+    student_id = await create_student(
+        school_year_id=teacher_session["school_year_id"],
+        first_name="Mia",
+        last_name="Manual",
+        pin="777777",
+    )
+    await enroll_student(class_id=class_id, student_id=student_id)
+
+    csrf_token = await get_teacher_csrf_token(client)
+    response = await client.post(
+        f"/teacher/students/{student_id}/manual-punch",
+        data={
+            "punch_type": "clock_in",
+            "timestamp": "2026-09-15T08:03",
+            "csrf_token": csrf_token,
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+    punches = await get_student_punches(student_id=student_id)
+    assert len(punches) == 1
+    assert punches[0]["manual"] == 1
+    assert punches[0]["clock_out_time"] is None
+
+
+@pytest.mark.asyncio
+async def test_manual_clock_in_duplicate_guard(client, teacher_session):
+    class_id = await create_class(
+        teacher_id=teacher_session["teacher_id"],
+        school_year_id=teacher_session["school_year_id"],
+        name="Period 8",
+    )
+    student_id = await create_student(
+        school_year_id=teacher_session["school_year_id"],
+        first_name="Nia",
+        last_name="Open",
+        pin="888888",
+    )
+    await enroll_student(class_id=class_id, student_id=student_id)
+    await add_punch(
+        student_id=student_id,
+        school_year_id=teacher_session["school_year_id"],
+        clock_in=datetime(2026, 9, 15, 8, 0, tzinfo=timezone.utc),
+        clock_out=None,
+    )
+
+    csrf_token = await get_teacher_csrf_token(client)
+    response = await client.post(
+        f"/teacher/students/{student_id}/manual-punch",
+        data={
+            "punch_type": "clock_in",
+            "timestamp": "2026-09-15T09:00",
+            "csrf_token": csrf_token,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["success"] is False
+    assert "already clocked in" in payload["error"].lower()
+
+
+@pytest.mark.asyncio
+async def test_manual_clock_out_updates_open_punch(client, teacher_session):
+    class_id = await create_class(
+        teacher_id=teacher_session["teacher_id"],
+        school_year_id=teacher_session["school_year_id"],
+        name="Period 9",
+    )
+    student_id = await create_student(
+        school_year_id=teacher_session["school_year_id"],
+        first_name="Ona",
+        last_name="Closer",
+        pin="999999",
+    )
+    await enroll_student(class_id=class_id, student_id=student_id)
+    await add_punch(
+        student_id=student_id,
+        school_year_id=teacher_session["school_year_id"],
+        clock_in=datetime(2026, 9, 15, 8, 0, tzinfo=timezone.utc),
+        clock_out=None,
+    )
+
+    csrf_token = await get_teacher_csrf_token(client)
+    response = await client.post(
+        f"/teacher/students/{student_id}/manual-punch",
+        data={
+            "punch_type": "clock_out",
+            "timestamp": "2026-09-15T10:30",
+            "csrf_token": csrf_token,
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+    punches = await get_student_punches(student_id=student_id)
+    assert len(punches) == 1
+    assert punches[0]["clock_out_time"] is not None
+    assert punches[0]["manual"] == 1
+
+
+@pytest.mark.asyncio
+async def test_manual_clock_out_requires_open_session(client, teacher_session):
+    class_id = await create_class(
+        teacher_id=teacher_session["teacher_id"],
+        school_year_id=teacher_session["school_year_id"],
+        name="Period 10",
+    )
+    student_id = await create_student(
+        school_year_id=teacher_session["school_year_id"],
+        first_name="Pia",
+        last_name="Missing",
+        pin="121212",
+    )
+    await enroll_student(class_id=class_id, student_id=student_id)
+
+    csrf_token = await get_teacher_csrf_token(client)
+    response = await client.post(
+        f"/teacher/students/{student_id}/manual-punch",
+        data={
+            "punch_type": "clock_out",
+            "timestamp": "2026-09-15T10:30",
+            "csrf_token": csrf_token,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error"] == "Student is not clocked in."
+
+
+@pytest.mark.asyncio
+async def test_manual_punch_invalid_timestamp(client, teacher_session):
+    class_id = await create_class(
+        teacher_id=teacher_session["teacher_id"],
+        school_year_id=teacher_session["school_year_id"],
+        name="Period 11",
+    )
+    student_id = await create_student(
+        school_year_id=teacher_session["school_year_id"],
+        first_name="Quin",
+        last_name="Date",
+        pin="131313",
+    )
+    await enroll_student(class_id=class_id, student_id=student_id)
+
+    csrf_token = await get_teacher_csrf_token(client)
+    response = await client.post(
+        f"/teacher/students/{student_id}/manual-punch",
+        data={
+            "punch_type": "clock_in",
+            "timestamp": "bad-date",
+            "csrf_token": csrf_token,
+        },
+    )
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error"] == "Invalid timestamp format."
+
+
+@pytest.mark.asyncio
+async def test_student_detail_renders_manual_punch_modal_and_script_guards(client, teacher_session):
+    class_id = await create_class(
+        teacher_id=teacher_session["teacher_id"],
+        school_year_id=teacher_session["school_year_id"],
+        name="Period 12",
+    )
+    student_id = await create_student(
+        school_year_id=teacher_session["school_year_id"],
+        first_name="Rae",
+        last_name="Dialog",
+        pin="141414",
+    )
+    await enroll_student(class_id=class_id, student_id=student_id)
+
+    response = await client.get(f"/teacher/students/{student_id}")
+    assert response.status_code == 200
+    assert "Manual Punch" in response.text
+    assert "manual-punch-modal" in response.text
+    assert "manual-punch-form" in response.text
+    assert 'if (event.key === "Enter")' in response.text
