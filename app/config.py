@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     display_timezone: str = "America/Denver"
+    backup_dir: str = "/opt/cte-time/backups"
+    log_dir: str = "/var/log/cte-time"
+    app_version: str = "1.0.0"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

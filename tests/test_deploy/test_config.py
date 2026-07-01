@@ -19,10 +19,12 @@ def test_deployment_artifacts_exist_with_expected_basics():
     repo_root = Path(__file__).resolve().parents[2]
 
     deploy_script = repo_root / "deploy.sh"
+    backup_script = repo_root / "deploy" / "backup.sh"
     service_file = repo_root / "deploy" / "cte-time.service"
     nginx_file = repo_root / "deploy" / "nginx-cte-time.conf"
 
     assert deploy_script.exists()
+    assert backup_script.exists()
     assert service_file.exists()
     assert nginx_file.exists()
 
@@ -32,6 +34,12 @@ def test_deployment_artifacts_exist_with_expected_basics():
     assert "requirements.txt" in deploy_text
     assert "systemctl restart" in deploy_text
     assert "cte-time" in deploy_text
+
+    backup_text = backup_script.read_text(encoding="utf-8")
+    assert "sqlite3" in backup_text
+    assert "BACKUP_DIR=\"/opt/cte-time/backups\"" in backup_text
+    assert "DB_PATH=\"/opt/cte-time/data/cte_time.db\"" in backup_text
+    assert "cte_time-" in backup_text
 
     service_text = service_file.read_text(encoding="utf-8")
     assert "User=www-data" in service_text
@@ -43,5 +51,6 @@ def test_deployment_artifacts_exist_with_expected_basics():
     nginx_text = nginx_file.read_text(encoding="utf-8")
     assert "proxy_pass http://127.0.0.1:8000;" in nginx_text
     assert "proxy_set_header Host $host;" in nginx_text
+    assert "proxy_set_header X-Real-IP $remote_addr;" in nginx_text
     assert "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;" in nginx_text
     assert "proxy_set_header X-Forwarded-Proto $scheme;" in nginx_text

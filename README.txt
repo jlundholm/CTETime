@@ -110,11 +110,19 @@ For HTTPS, configure Certbot:
 Database Backup
 ---------------
 
-Add a cron job for daily SQLite dump:
+Use the backup script for daily SQLite dumps:
 
-    0 2 * * * /usr/bin/sqlite3 /opt/cte-time/data/cte_time.db ".backup '/opt/cte-time/backups/cte_time-$(date +\%Y\%m\%d).db'"
+    chmod +x /opt/cte-time/deploy/backup.sh
 
-Also relies on Veeam nightly VM backup for full machine recovery.
+Run it manually:
+
+    /opt/cte-time/deploy/backup.sh
+
+Add a cron job:
+
+    0 2 * * * /opt/cte-time/deploy/backup.sh
+
+Also rely on a third-party backup solution for full machine recovery.
 
 Logging
 -------
@@ -130,7 +138,7 @@ Use the deployment script:
 
 The script performs:
 - `git pull`
-- dependency install via `.venv/bin/pip install -r requirements.txt`
+- dependency install via `.venv/bin/pip install --no-input --upgrade -r requirements.txt`
 - `systemctl restart cte-time`
 
 System deployment templates are stored in this repository:
