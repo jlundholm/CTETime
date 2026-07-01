@@ -6,6 +6,7 @@ import secrets
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, Request
 
@@ -18,6 +19,12 @@ MAX_PREVIEW_ROWS = 100
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def get_display_timezone() -> ZoneInfo:
+    from app.config import get_settings
+
+    return ZoneInfo(get_settings().display_timezone)
 
 
 def ensure_utc(value: datetime) -> datetime:

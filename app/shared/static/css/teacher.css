@@ -227,6 +227,10 @@
   z-index: 1000;
 }
 
+.teacher-modal-overlay[hidden] {
+  display: none !important;
+}
+
 .teacher-modal {
   width: min(460px, calc(100vw - 2rem));
   background: var(--color-surface);

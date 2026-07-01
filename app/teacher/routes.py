@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
-from app.shared.helpers import flash, get_csrf_token, pop_flash, validate_csrf_token
+from app.shared.helpers import ensure_utc, flash, get_csrf_token, get_display_timezone, pop_flash, validate_csrf_token
 
 
 router = APIRouter(prefix="/teacher", tags=["teacher"])
@@ -57,7 +57,8 @@ def format_timestamp(value: str | None) -> str:
         parsed = datetime.fromisoformat(value)
     except (TypeError, ValueError):
         return ""
-    return parsed.astimezone(timezone.utc).strftime("%I:%M %p").lstrip("0")
+    tz = get_display_timezone()
+    return parsed.replace(tzinfo=timezone.utc).astimezone(tz).strftime("%I:%M %p").lstrip("0")
 
 
 def _normalize_date(value: str | None) -> str | None:
@@ -615,11 +616,12 @@ async def manual_punch(
     except (TypeError, ValueError):
         return JSONResponse({"success": False, "error": "Invalid timestamp format."}, status_code=400)
 
-    punch_timestamp = (
-        parsed_timestamp.replace(tzinfo=timezone.utc)
-        if parsed_timestamp.tzinfo is None
-        else parsed_timestamp.astimezone(timezone.utc)
-    )
+    if parsed_timestamp.tzinfo is None:
+        tz = get_display_timezone()
+        local_dt = parsed_timestamp.replace(tzinfo=tz)
+    else:
+        local_dt = parsed_timestamp
+    punch_timestamp = local_dt.astimezone(timezone.utc)
 
     settings = get_settings()
     try:
@@ -660,13 +662,27 @@ async def manual_punch(
                         }
                     )
 
-                await connection.execute(
-                    "INSERT INTO punches (student_id, clock_in_time, manual, school_year_id) VALUES (?, ?, 1, ?)",
-                    (student_id, punch_timestamp.isoformat(), school_year_id),
-                )
+                try:
+                    await connection.execute(
+                        "INSERT INTO punches (student_id, clock_in_time, manual, school_year_id) VALUES (?, ?, 1, ?)",
+                        (student_id, punch_timestamp.isoformat(), school_year_id),
+                    )
+                except aiosqlite.IntegrityError:
+                    return JSONResponse(
+                        {"success": False, "error": "Student is already clocked in."}
+                    )
             else:
                 if not open_punch:
                     return JSONResponse({"success": False, "error": "Student is not clocked in."})
+
+                try:
+                    clock_in_dt = datetime.fromisoformat(open_punch["clock_in_time"])
+                except (TypeError, ValueError):
+                    clock_in_dt = None
+                if clock_in_dt is not None and punch_timestamp < ensure_utc(clock_in_dt):
+                    return JSONResponse(
+                        {"success": False, "error": "Clock-out time must be after clock-in time."}
+                    )
 
                 update_cursor = await connection.execute(
                     "UPDATE punches SET clock_out_time = ?, manual = 1 WHERE id = ? AND clock_out_time IS NULL",

@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     database_path: str = "cte_time.db"
     host: str = "127.0.0.1"
     port: int = 8000
+    display_timezone: str = "America/Denver"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

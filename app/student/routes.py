@@ -1,7 +1,8 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import aiosqlite
 from fastapi import APIRouter, Request
@@ -10,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
-from app.shared.helpers import ensure_utc, parse_iso_datetime, pop_flash, utc_now
+from app.shared.helpers import ensure_utc, get_display_timezone, parse_iso_datetime, pop_flash, utc_now
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,8 @@ def render_student_template(request: Request, name: str, context: dict[str, Any]
 
 
 def format_time(value: datetime) -> str:
-    return value.strftime("%I:%M %p").lstrip("0")
+    tz = get_display_timezone()
+    return ensure_utc(value).astimezone(tz).strftime("%I:%M %p").lstrip("0")
 
 
 def format_duration(clock_in_time: datetime, clock_out_time: datetime) -> str:
