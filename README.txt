@@ -31,6 +31,7 @@ Installation
        DATABASE_PATH=/opt/cte-time/data/cte_time.db
        HOST=127.0.0.1
        PORT=8000
+       DISPLAY_TIMEZONE=America/Denver
 
    Generate the SECRET_KEY:
 
@@ -123,13 +124,18 @@ Logs are written to /var/log/cte-time/ with automatic rotation.
 Deployment Updates
 ------------------
 
-To deploy a new version:
+Use the deployment script:
 
-    cd /opt/cte-time
-    git pull
-    source .venv/bin/activate
-    pip install -r requirements.txt
-    sudo systemctl restart cte-time
+    sudo /opt/cte-time/deploy.sh
+
+The script performs:
+- `git pull`
+- dependency install via `.venv/bin/pip install -r requirements.txt`
+- `systemctl restart cte-time`
+
+System deployment templates are stored in this repository:
+- `deploy/cte-time.service`
+- `deploy/nginx-cte-time.conf`
 
 Development
 -----------

@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,9 +14,22 @@ from app.student.routes import router as student_router
 from app.teacher.routes import router as teacher_router
 
 
+logger = logging.getLogger(__name__)
+
+
+def _ensure_data_directories(database_path: str) -> None:
+    required_dirs = {Path(database_path).expanduser().resolve().parent, Path("/opt/cte-time/data")}
+    for directory in required_dirs:
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            logger.warning("Could not create data directory: %s", directory)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     settings = get_settings()
+    _ensure_data_directories(settings.database_path)
     await run_migrations(settings.database_path)
     yield
 
