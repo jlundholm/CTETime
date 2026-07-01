@@ -1,0 +1,31 @@
+{% if student and punches %}
+<table class="teacher-punch-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Clock In</th>
+      <th>Clock Out</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for punch in punches %}
+    <tr>
+      <td>{{ punch.clock_in_time[:10] }}</td>
+      <td>
+        {{ format_timestamp(punch.clock_in_time) }}
+        {% if punch.manual %}
+        <span class="teacher-manual-badge">(manual)</span>
+        {% endif %}
+      </td>
+      <td>{{ format_timestamp(punch.clock_out_time) }}</td>
+      <td class="teacher-mono">{{ format_seconds(punch.duration_seconds) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% elif student %}
+<p>No punches for {{ student.first_name }} this year.</p>
+{% else %}
+<p>Unable to load punches.</p>
+{% endif %}

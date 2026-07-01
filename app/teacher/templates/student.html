@@ -1,0 +1,60 @@
+{% extends "teacher_base.html" %}
+
+{% block teacher_content %}
+<header class="teacher-detail-header">
+  <div>
+    <h1>{{ student.first_name }} {{ student.last_name }}</h1>
+    <p class="teacher-detail-subtitle">Student punch history</p>
+  </div>
+  <div class="teacher-detail-actions">
+    <a href="/teacher/students/{{ student.id }}/export?from={{ from_date }}&to={{ to_date }}" class="button button-secondary">Export CSV</a>
+  </div>
+</header>
+
+<p>PIN: <span class="teacher-mono">{{ student.pin }}</span></p>
+
+<section class="teacher-inline-form">
+  <form method="get" class="teacher-inline-form-grid teacher-filter-form">
+    <label for="from-date">From</label>
+    <input id="from-date" type="date" name="from" value="{{ from_date }}" />
+    <label for="to-date">To</label>
+    <input id="to-date" type="date" name="to" value="{{ to_date }}" />
+    <div class="teacher-inline-form-actions">
+      <button type="submit" class="button">Filter</button>
+      <a href="/teacher/students/{{ student.id }}" class="button button-secondary">Reset</a>
+    </div>
+  </form>
+</section>
+
+{% if punches %}
+<table class="teacher-classes-table teacher-classes-table-striped">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Clock In</th>
+      <th>Clock Out</th>
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for punch in punches %}
+    <tr>
+      <td>{{ punch.clock_in_time[:10] }}</td>
+      <td>
+        {{ format_timestamp(punch.clock_in_time) }}
+        {% if punch.manual %}
+        <span class="teacher-manual-badge">(manual)</span>
+        {% endif %}
+      </td>
+      <td>{{ format_timestamp(punch.clock_out_time) }}</td>
+      <td class="teacher-mono">{{ format_seconds(punch.duration_seconds) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="teacher-empty-state">
+  <p>No punches for {{ student.first_name }} this year.</p>
+</div>
+{% endif %}
+{% endblock %}

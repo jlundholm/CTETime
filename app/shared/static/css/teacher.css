@@ -142,6 +142,75 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.teacher-classes-table-striped tbody tr:nth-child(odd):not(.teacher-punch-detail-row) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.teacher-sticky-header {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  z-index: 2;
+}
+
+.sort-header {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.sort-header:hover,
+.sort-header.active {
+  color: var(--color-text-primary);
+}
+
+.sort-caret {
+  min-width: 10px;
+}
+
+.teacher-mono {
+  font-family: var(--font-mono);
+}
+
+.teacher-clickable-row {
+  cursor: pointer;
+}
+
+.teacher-clickable-row:hover {
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.teacher-punch-detail-row td {
+  padding-top: 0;
+}
+
+.teacher-punch-detail-content {
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.teacher-punch-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.teacher-punch-table th,
+.teacher-punch-table td {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.teacher-manual-badge {
+  font-size: 11px;
+  color: var(--color-warning);
+  font-style: italic;
+}
+
+.teacher-filter-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .teacher-empty-state {
   border: 1px dashed var(--color-border);
   border-radius: var(--rounded-lg);

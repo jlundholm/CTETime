@@ -7,6 +7,7 @@
     <p class="teacher-detail-subtitle">Class roster</p>
   </div>
   <div class="teacher-detail-actions">
+    <a href="/teacher/classes/{{ class_row.id }}/export" class="button button-secondary">Export CSV</a>
     <button type="button" class="button button-secondary" id="rename-class-toggle">Rename</button>
     <button type="button" class="button" id="add-students-toggle">Add Students</button>
   </div>
@@ -57,18 +58,42 @@
 </section>
 
 {% if students %}
-<table class="teacher-classes-table">
+<table class="teacher-classes-table teacher-classes-table-striped teacher-sortable-table" data-class-id="{{ class_row.id }}">
   <thead>
     <tr>
-      <th>Name</th>
-      <th>PIN</th>
-      <th>Actions</th>
+      <th class="teacher-sticky-header">
+        <a href="?sort=name&order={% if sort == 'name' and order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-header{% if sort == 'name' %} active{% endif %}">
+          Name
+          <span class="sort-caret">{% if sort == 'name' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</span>
+        </a>
+      </th>
+      <th class="teacher-sticky-header">
+        <a href="?sort=today&order={% if sort == 'today' and order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-header{% if sort == 'today' %} active{% endif %}">
+          Today's Punch
+          <span class="sort-caret">{% if sort == 'today' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</span>
+        </a>
+      </th>
+      <th class="teacher-sticky-header">
+        <a href="?sort=week&order={% if sort == 'week' and order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-header{% if sort == 'week' %} active{% endif %}">
+          Week Total
+          <span class="sort-caret">{% if sort == 'week' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</span>
+        </a>
+      </th>
+      <th class="teacher-sticky-header">
+        <a href="?sort=pin&order={% if sort == 'pin' and order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-header{% if sort == 'pin' %} active{% endif %}">
+          PIN
+          <span class="sort-caret">{% if sort == 'pin' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</span>
+        </a>
+      </th>
+      <th class="teacher-sticky-header">Actions</th>
     </tr>
   </thead>
   <tbody>
     {% for student in students %}
-    <tr>
+    <tr class="teacher-clickable-row" data-student-id="{{ student.id }}">
       <td>{{ student.last_name }}, {{ student.first_name }}</td>
+      <td>{{ student.today_status or "" }}</td>
+      <td class="teacher-mono">{{ student.week_total }}</td>
       <td>{{ student.pin }}</td>
       <td>
         <form
@@ -79,6 +104,12 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
           <button type="submit" class="button button-danger teacher-button-small">Remove</button>
         </form>
+        <a href="/teacher/students/{{ student.id }}" class="button button-secondary teacher-button-small">View</a>
+      </td>
+    </tr>
+    <tr class="teacher-punch-detail-row" id="student-punches-{{ student.id }}" hidden>
+      <td colspan="5">
+        <div class="teacher-punch-detail-content">Loading...</div>
       </td>
     </tr>
     {% endfor %}
@@ -93,6 +124,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/tables.js"></script>
 <script>
   (function () {
     const wireToggle = function (toggleIds, formId, cancelId, focusId) {
@@ -132,6 +164,10 @@
       addStudentsCancel ? addStudentsCancel.id : null,
       "student-ids"
     );
+
+    if (window.initTeacherClassTable) {
+      window.initTeacherClassTable();
+    }
   })();
 </script>
 {% endblock %}
