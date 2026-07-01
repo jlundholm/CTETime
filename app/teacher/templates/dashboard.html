@@ -3,8 +3,20 @@
 {% block teacher_content %}
 <header class="teacher-dashboard-header">
   <h1>My Classes</h1>
-  <a href="#" class="button button-primary">Create Class</a>
+  <button type="button" class="button" id="create-class-toggle">Create Class</button>
 </header>
+
+<section class="teacher-inline-form" id="create-class-form" hidden>
+  <form method="post" action="/teacher/classes/create" class="teacher-inline-form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <label for="class-name">Class name</label>
+    <input id="class-name" name="name" type="text" required maxlength="120" autocomplete="off" />
+    <div class="teacher-inline-form-actions">
+      <button type="submit" class="button">Create</button>
+      <button type="button" class="button button-secondary" id="create-class-cancel">Cancel</button>
+    </div>
+  </form>
+</section>
 
 {% if classes %}
 <table class="teacher-classes-table">
@@ -17,7 +29,7 @@
   <tbody>
     {% for class_row in classes %}
     <tr>
-      <td>{{ class_row.name }}</td>
+      <td><a href="/teacher/classes/{{ class_row.id }}">{{ class_row.name }}</a></td>
       <td>{{ class_row.student_count }}</td>
     </tr>
     {% endfor %}
@@ -26,7 +38,40 @@
 {% else %}
 <div class="teacher-empty-state">
   <p>No classes yet. Create one to get started.</p>
-  <a href="#" class="button button-primary">Create Class</a>
+  <button type="button" class="button" id="create-class-empty-toggle">Create Class</button>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const form = document.getElementById("create-class-form");
+    const toggles = [
+      document.getElementById("create-class-toggle"),
+      document.getElementById("create-class-empty-toggle"),
+    ].filter(Boolean);
+    const cancel = document.getElementById("create-class-cancel");
+    const input = document.getElementById("class-name");
+
+    if (!form || toggles.length === 0 || !cancel || !input) {
+      return;
+    }
+
+    const showForm = function () {
+      form.hidden = false;
+      input.focus();
+    };
+
+    const hideForm = function () {
+      form.hidden = true;
+      input.value = "";
+    };
+
+    toggles.forEach(function (button) {
+      button.addEventListener("click", showForm);
+    });
+    cancel.addEventListener("click", hideForm);
+  })();
+</script>
 {% endblock %}

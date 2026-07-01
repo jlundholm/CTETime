@@ -1,0 +1,137 @@
+{% extends "teacher_base.html" %}
+
+{% block teacher_content %}
+<header class="teacher-detail-header">
+  <div>
+    <h1>{{ class_row.name }}</h1>
+    <p class="teacher-detail-subtitle">Class roster</p>
+  </div>
+  <div class="teacher-detail-actions">
+    <button type="button" class="button button-secondary" id="rename-class-toggle">Rename</button>
+    <button type="button" class="button" id="add-students-toggle">Add Students</button>
+  </div>
+</header>
+
+<section class="teacher-inline-form" id="rename-class-form" hidden>
+  <form method="post" action="/teacher/classes/{{ class_row.id }}/rename" class="teacher-inline-form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <label for="rename-class-name">Class name</label>
+    <input
+      id="rename-class-name"
+      name="name"
+      type="text"
+      required
+      maxlength="120"
+      value="{{ class_row.name }}"
+      autocomplete="off"
+    />
+    <div class="teacher-inline-form-actions">
+      <button type="submit" class="button">Save</button>
+      <button type="button" class="button button-secondary" id="rename-class-cancel">Cancel</button>
+    </div>
+  </form>
+</section>
+
+<section class="teacher-inline-form" id="add-students-form" hidden>
+  <form method="post" action="/teacher/classes/{{ class_row.id }}/add-students" class="teacher-inline-form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    {% if available_students %}
+    <label for="student-ids">Select students</label>
+    <select id="student-ids" name="student_ids" multiple size="8">
+      {% for student in available_students %}
+      <option value="{{ student.id }}">{{ student.last_name }}, {{ student.first_name }} ({{ student.pin }})</option>
+      {% endfor %}
+    </select>
+    <p class="teacher-form-hint">Hold Ctrl/Cmd to select multiple students.</p>
+    <div class="teacher-inline-form-actions">
+      <button type="submit" class="button">Add Selected</button>
+      <button type="button" class="button button-secondary" id="add-students-cancel">Cancel</button>
+    </div>
+    {% else %}
+    <p>No students available to add.</p>
+    <div class="teacher-inline-form-actions">
+      <button type="button" class="button button-secondary" id="add-students-close">Close</button>
+    </div>
+    {% endif %}
+  </form>
+</section>
+
+{% if students %}
+<table class="teacher-classes-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>PIN</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for student in students %}
+    <tr>
+      <td>{{ student.last_name }}, {{ student.first_name }}</td>
+      <td>{{ student.pin }}</td>
+      <td>
+        <form
+          method="post"
+          action="/teacher/classes/{{ class_row.id }}/students/{{ student.id }}/remove"
+          onsubmit="return confirm('Remove this student from the class?');"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+          <button type="submit" class="button button-danger teacher-button-small">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="teacher-empty-state">
+  <p>No students in this class.</p>
+  <button type="button" class="button" id="empty-add-students-toggle">Add Students</button>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const wireToggle = function (toggleIds, formId, cancelId, focusId) {
+      const form = document.getElementById(formId);
+      const cancel = document.getElementById(cancelId);
+      const focusTarget = focusId ? document.getElementById(focusId) : null;
+      const toggles = toggleIds.map(function (id) {
+        return document.getElementById(id);
+      }).filter(Boolean);
+
+      if (!form || !cancel || toggles.length === 0) {
+        return;
+      }
+
+      const show = function () {
+        form.hidden = false;
+        if (focusTarget) {
+          focusTarget.focus();
+        }
+      };
+
+      const hide = function () {
+        form.hidden = true;
+      };
+
+      toggles.forEach(function (toggle) {
+        toggle.addEventListener("click", show);
+      });
+      cancel.addEventListener("click", hide);
+    };
+
+    wireToggle(["rename-class-toggle"], "rename-class-form", "rename-class-cancel", "rename-class-name");
+    const addStudentsCancel = document.getElementById("add-students-cancel") || document.getElementById("add-students-close");
+    wireToggle(
+      ["add-students-toggle", "empty-add-students-toggle"],
+      "add-students-form",
+      addStudentsCancel ? addStudentsCancel.id : null,
+      "student-ids"
+    );
+  })();
+</script>
+{% endblock %}
