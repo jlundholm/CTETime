@@ -40,7 +40,7 @@ def render_teacher_template(request: Request, name: str, context: dict[str, Any]
 
 
 def format_seconds(seconds: int | float | None) -> str:
-    if not seconds:
+    if seconds is None:
         return ""
     total_seconds = max(int(seconds), 0)
     hours = total_seconds // 3600
@@ -70,7 +70,7 @@ def _normalize_date(value: str | None) -> str | None:
         datetime.fromisoformat(stripped)
     except ValueError:
         return None
-    return stripped
+    return stripped[:10]
 
 
 def _week_start_for(date_value: datetime) -> datetime:
@@ -333,7 +333,7 @@ async def student_punches_partial(request: Request, class_id: int, student_id: i
                 (student_id, school_year_id),
             ) as punches_cursor:
                 punches_rows = await punches_cursor.fetchall()
-    except aiosqlite.Error:
+    except Exception:
         logger.exception("Failed to load student punches partial")
         return templates.TemplateResponse(
             request=request,
@@ -417,7 +417,7 @@ async def student_detail(
 
             async with connection.execute(query, params) as punches_cursor:
                 punches_rows = await punches_cursor.fetchall()
-    except aiosqlite.Error:
+    except Exception:
         logger.exception("Failed to load student detail")
         flash(request, "Unable to load student detail. Please try again.", "error")
         return RedirectResponse(url="/teacher/dashboard", status_code=303)
@@ -484,7 +484,7 @@ async def export_class_csv(
 
             async with connection.execute(query, params) as rows_cursor:
                 rows = await rows_cursor.fetchall()
-    except aiosqlite.Error:
+    except Exception:
         logger.exception("Failed to export class CSV")
         return RedirectResponse(url=f"/teacher/classes/{class_id}", status_code=303)
 
@@ -532,7 +532,7 @@ async def export_student_csv(
 
             async with connection.execute(
                 (
-                    "SELECT DISTINCT s.id, s.first_name, s.last_name "
+                    "SELECT s.first_name, s.last_name "
                     "FROM students s "
                     "JOIN enrollments e ON e.student_id = s.id "
                     "JOIN classes c ON c.id = e.class_id "
@@ -546,9 +546,8 @@ async def export_student_csv(
                 return RedirectResponse(url="/teacher/dashboard", status_code=303)
 
             query = (
-                "SELECT s.first_name, s.last_name, p.clock_in_time, p.clock_out_time, p.manual "
+                "SELECT p.clock_in_time, p.clock_out_time, p.manual "
                 "FROM punches p "
-                "JOIN students s ON s.id = p.student_id "
                 "WHERE p.student_id = ? AND p.school_year_id = ?"
             )
             params: list[Any] = [student_id, school_year_id]
@@ -564,7 +563,7 @@ async def export_student_csv(
 
             async with connection.execute(query, params) as rows_cursor:
                 rows = await rows_cursor.fetchall()
-    except aiosqlite.Error:
+    except Exception:
         logger.exception("Failed to export student CSV")
         return RedirectResponse(url=f"/teacher/students/{student_id}", status_code=303)
 
@@ -574,8 +573,8 @@ async def export_student_csv(
     for row in rows:
         writer.writerow(
             [
-                row["first_name"],
-                row["last_name"],
+                student_row["first_name"],
+                student_row["last_name"],
                 row["clock_in_time"],
                 row["clock_out_time"] or "",
                 "Yes" if row["manual"] else "No",

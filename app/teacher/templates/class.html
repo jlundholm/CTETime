@@ -90,7 +90,7 @@
   </thead>
   <tbody>
     {% for student in students %}
-    <tr class="teacher-clickable-row" data-student-id="{{ student.id }}">
+    <tr class="teacher-clickable-row{% if loop.index0 % 2 == 0 %} teacher-row-striped{% endif %}" data-student-id="{{ student.id }}">
       <td>{{ student.last_name }}, {{ student.first_name }}</td>
       <td>{{ student.today_status or "" }}</td>
       <td class="teacher-mono">{{ student.week_total }}</td>
