@@ -75,8 +75,10 @@ def app_factory(test_database_path, monkeypatch):
             get_settings.cache_clear()
             try:
                 Path(test_database_path).unlink(missing_ok=True)
-            except OSError:
-                pass
+            except OSError as exc:
+                logging.getLogger(__name__).warning(
+                    "Failed to clean up test database %s: %s", test_database_path, exc
+                )
 
     return factory
 

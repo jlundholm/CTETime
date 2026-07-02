@@ -16,7 +16,7 @@ def test_ops_artifacts_exist() -> None:
     assert (repo_root / "backup.sh").exists()
 
 
-def test_service_enables_proxy_headers() -> None:
+def test_uvicorn_proxy_headers_in_deploy_script() -> None:
     service_text = (_repo_root() / "cte-time.service").read_text(encoding="utf-8")
 
     assert "--proxy-headers" in service_text
@@ -38,7 +38,7 @@ def test_nginx_config_has_required_hardening_directives() -> None:
     assert "proxy_set_header X-Forwarded-Proto $scheme;" in nginx_text
 
 
-def test_backup_script_handles_same_day_double_run(tmp_path: Path) -> None:
+def test_backup_script_handles_duplicate_run(tmp_path: Path) -> None:
     repo_root = _repo_root()
     script = repo_root / "backup.sh"
 

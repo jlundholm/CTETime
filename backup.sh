@@ -23,7 +23,14 @@ if [[ ! -f "$DB_PATH" ]]; then
   exit 1
 fi
 
-mkdir -p "$BACKUP_DIR"
+mkdir -p "$BACKUP_DIR" || { log_error "Cannot create backup directory: $BACKUP_DIR"; exit 1; }
+
+LOCK_DIR="$BACKUP_DIR/.backup.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  log_error "Another backup process appears to be running (lock at $LOCK_DIR)."
+  exit 1
+fi
+trap 'rm -rf "$LOCK_DIR"' EXIT
 
 counter=1
 while :; do

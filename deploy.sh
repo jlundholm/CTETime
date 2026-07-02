@@ -33,11 +33,11 @@ source "${APP_DIR}/.venv/bin/activate"
 pip install --no-input --upgrade -r requirements.txt
 
 if [[ -f "${SERVICE_UNIT_FILE}" ]]; then
-  if ! grep -q -- "--proxy-headers" "${SERVICE_UNIT_FILE}"; then
+  if ! grep -q 'ExecStart=.*--proxy-headers' "${SERVICE_UNIT_FILE}"; then
     echo "ERROR: ${SERVICE_UNIT_FILE} is missing --proxy-headers in ExecStart."
     exit 1
   fi
-  if ! grep -q -- "--forwarded-allow-ips=127.0.0.1" "${SERVICE_UNIT_FILE}"; then
+  if ! grep -q 'ExecStart=.*--forwarded-allow-ips=127.0.0.1' "${SERVICE_UNIT_FILE}"; then
     echo "ERROR: ${SERVICE_UNIT_FILE} is missing --forwarded-allow-ips=127.0.0.1 in ExecStart."
     exit 1
   fi
