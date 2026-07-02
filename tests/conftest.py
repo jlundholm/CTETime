@@ -20,7 +20,7 @@ def test_database_path(tmp_path) -> str:
 @pytest_asyncio.fixture
 async def app(test_database_path, monkeypatch):
     temp_root = str(Path(test_database_path).parent)
-    monkeypatch.setenv("SECRET_KEY", "test-secret")
+    monkeypatch.setenv("SECRET_KEY", "test-secret-16-chars")
     monkeypatch.setenv("DATABASE_PATH", test_database_path)
     monkeypatch.setenv("HOST", "127.0.0.1")
     monkeypatch.setenv("PORT", "8001")
@@ -41,9 +41,10 @@ async def app(test_database_path, monkeypatch):
         )
         await connection.commit()
 
+    _initial_handler_count = len(logging.getLogger().handlers)
     app_instance = create_app()
     yield app_instance
-    logging.getLogger().handlers.clear()
+    del logging.getLogger().handlers[_initial_handler_count:]
     get_settings.cache_clear()
 
 
