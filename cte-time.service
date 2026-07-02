@@ -1,0 +1,16 @@
+[Unit]
+Description=CTE Time Application
+After=network.target
+Wants=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/cte-time
+EnvironmentFile=-/opt/cte-time/.env
+ExecStart=/opt/cte-time/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
