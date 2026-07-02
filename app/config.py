@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     rate_limit_max_requests: int = Field(default=60, gt=0)
     rate_limit_window_seconds: int = Field(default=60, gt=0)
     week_start_day: int = Field(default=0, ge=0, le=6, description="Day of week: 0=Monday, 6=Sunday (Python weekday convention)")
+    admin_email: str = ""
+    admin_password: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

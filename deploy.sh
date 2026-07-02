@@ -17,6 +17,10 @@ fi
 
 echo "Deploying CTE Time from ${APP_DIR}..."
 echo "Note: nginx must forward X-Forwarded-For and X-Forwarded-Proto headers."
+echo "Note: Set ADMIN_EMAIL and ADMIN_PASSWORD in .env for first-run admin bootstrap."
+
+echo "Creating pre-deployment backup..."
+"${APP_DIR}/backup.sh" || echo "WARNING: Pre-deployment backup failed, continuing..."
 
 cd "${APP_DIR}"
 

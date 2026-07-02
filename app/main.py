@@ -11,6 +11,7 @@ from starlette.staticfiles import StaticFiles
 
 from app.admin.routes import router as admin_router
 from app.auth.routes import router as auth_router
+from app.auth.staff import hash_password
 from app.config import get_settings
 from app.database import run_migrations
 from app.shared.rate_limit import InMemoryRateLimiter
@@ -59,12 +60,34 @@ def _configure_file_logging(log_dir: str) -> None:
     root_logger.setLevel(logging.INFO)
 
 
+async def _seed_admin(database_path: str, email: str, password: str) -> None:
+    if not email or not password:
+        logger.info("ADMIN_EMAIL or ADMIN_PASSWORD not set; skipping admin bootstrap")
+        return
+
+    async with aiosqlite.connect(database_path) as conn:
+        cursor = await conn.execute("SELECT COUNT(*) FROM admins")
+        row = await cursor.fetchone()
+        if row[0] > 0:
+            logger.info("Admin already exists; skipping bootstrap")
+            return
+
+        password_hash = hash_password(password)
+        await conn.execute(
+            "INSERT INTO admins (email, first_name, last_name, password_hash) VALUES (?, ?, ?, ?)",
+            (email, "System", "Admin", password_hash),
+        )
+        await conn.commit()
+        logger.info("Admin bootstrap complete: %s", email)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     settings = get_settings()
     _ensure_required_directories(settings.database_path, settings.log_dir)
     _configure_file_logging(settings.log_dir)
     await run_migrations(settings.database_path)
+    await _seed_admin(settings.database_path, settings.admin_email, settings.admin_password)
     yield
 
 

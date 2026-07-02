@@ -36,6 +36,16 @@ Installation
        SESSION_MAX_AGE=28800
        SESSION_SAME_SITE=lax
 
+    For first-run admin bootstrap, add these to create the initial admin account:
+
+        ADMIN_EMAIL=admin@example.com
+        ADMIN_PASSWORD=<strong-password>
+
+    On first application start, if no admin accounts exist in the database, an admin
+    will be created with these credentials. The admin is created with bcrypt-hashed
+    password and the event is logged. Once seeded, subsequent startups do not
+    overwrite the admin — you can remove or change ADMIN_EMAIL/ADMIN_PASSWORD afterward.
+
     Generate the SECRET_KEY:
 
         python3 -c "import secrets; print(secrets.token_hex(32))"
