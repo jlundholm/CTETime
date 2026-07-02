@@ -34,7 +34,7 @@ def test_nginx_config_has_required_hardening_directives() -> None:
     assert 'add_header X-Frame-Options "DENY" always;' in nginx_text
     assert 'add_header X-XSS-Protection "0" always;' in nginx_text
     assert 'add_header Referrer-Policy "strict-origin-when-cross-origin" always;' in nginx_text
-    assert "add_header Content-Security-Policy \"default-src 'self'\" always;" in nginx_text
+    assert "add_header Content-Security-Policy \"default-src 'self'; script-src 'self' 'unsafe-inline'\" always;" in nginx_text
     assert "proxy_set_header X-Forwarded-For $remote_addr;" in nginx_text
     assert "proxy_set_header X-Forwarded-Proto $scheme;" in nginx_text
 

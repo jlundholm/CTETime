@@ -79,8 +79,8 @@ def test_deployment_artifacts_exist_with_expected_basics():
 
     backup_text = backup_script.read_text(encoding="utf-8")
     assert "sqlite3" in backup_text
-    assert "BACKUP_DIR=\"/opt/cte-time/backups\"" in backup_text
-    assert "DB_PATH=\"/opt/cte-time/data/cte_time.db\"" in backup_text
+    assert "BACKUP_DIR=\"${BACKUP_DIR:-/opt/cte-time/backups}\"" in backup_text
+    assert "DB_PATH=\"${DB_PATH:-/opt/cte-time/data/cte_time.db}\"" in backup_text
     assert "cte_time-" in backup_text
 
     service_text = service_file.read_text(encoding="utf-8")
@@ -89,6 +89,8 @@ def test_deployment_artifacts_exist_with_expected_basics():
     assert "EnvironmentFile=" in service_text
     assert "/opt/cte-time/.env" in service_text
     assert "--host 127.0.0.1 --port 8000" in service_text
+    assert "--proxy-headers" in service_text
+    assert "--forwarded-allow-ips=127.0.0.1" in service_text
 
     nginx_text = nginx_file.read_text(encoding="utf-8")
     assert "listen 80;" in nginx_text
@@ -99,7 +101,7 @@ def test_deployment_artifacts_exist_with_expected_basics():
     assert "proxy_pass http://127.0.0.1:8000;" in nginx_text
     assert "proxy_set_header Host $host;" in nginx_text
     assert "proxy_set_header X-Real-IP $remote_addr;" in nginx_text
-    assert "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;" in nginx_text
+    assert "proxy_set_header X-Forwarded-For $remote_addr;" in nginx_text
     assert "proxy_set_header X-Forwarded-Proto $scheme;" in nginx_text
 
 

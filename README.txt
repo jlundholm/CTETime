@@ -57,12 +57,13 @@ Installation
         sudo chown www-data:www-data /opt/cte-time/.env
         sudo chmod 600 /opt/cte-time/.env
 
-5. Create the data directory:
+ 5. Create the data directory:
 
        mkdir -p /opt/cte-time/data
-       mkdir -p /var/log/cte-time
+       sudo mkdir -p /var/log/cte-time
+       sudo chown www-data:www-data /var/log/cte-time
 
-6. Run database migrations (automatically runs on first start).
+ 6. Run database migrations (automatically runs on first start).
 
 Running
 -------
@@ -76,22 +77,9 @@ Start the application server:
 Production with systemd
 -----------------------
 
-Create /etc/systemd/system/cte-time.service:
+Copy the systemd service unit from the repository:
 
-    [Unit]
-    Description=CTE Time Application
-    After=network.target
-
-    [Service]
-    User=www-data
-    WorkingDirectory=/opt/cte-time
-    EnvironmentFile=/opt/cte-time/.env
-    ExecStart=/opt/cte-time/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
-    Restart=always
-    RestartSec=5
-
-    [Install]
-    WantedBy=multi-user.target
+    sudo cp /opt/cte-time/deploy/cte-time.service /etc/systemd/system/cte-time.service
 
 Enable and start the service:
 
@@ -99,34 +87,16 @@ Enable and start the service:
     sudo systemctl enable cte-time
     sudo systemctl start cte-time
 
+Verify the service is running:
+
+    systemctl status cte-time --no-pager
+
 nginx Reverse Proxy
 -------------------
 
-Create /etc/nginx/sites-available/cte-time:
+Copy the hardened nginx config from the repository:
 
-    server {
-        listen 80;
-        server_name cte-time.example.com;
-        return 301 https://$host$request_uri;
-    }
-
-    server {
-        listen 443 ssl;
-        server_name cte-time.example.com;
-
-        ssl_certificate /etc/letsencrypt/live/cte-time.example.com/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/cte-time.example.com/privkey.pem;
-
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
-        location / {
-            proxy_pass http://127.0.0.1:8000;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-    }
+    sudo cp /opt/cte-time/deploy/nginx-cte-time.conf /etc/nginx/sites-available/cte-time
 
 Enable the site:
 
@@ -144,17 +114,28 @@ Database Backup
 
 Use the backup script for daily SQLite dumps:
 
-    chmod +x /opt/cte-time/deploy/backup.sh
+    chmod +x /opt/cte-time/backup.sh
 
 Run it manually:
 
-    /opt/cte-time/deploy/backup.sh
+    /opt/cte-time/backup.sh
 
 Add a cron job:
 
-    0 2 * * * /opt/cte-time/deploy/backup.sh
+    0 2 * * * /opt/cte-time/backup.sh
 
 Also rely on a third-party backup solution for full machine recovery.
+
+Health Check
+------------
+
+The application exposes a health check endpoint at ``/health``:
+
+    curl http://127.0.0.1:8000/health
+
+Response: ``{"status":"ok","version":"1.0.0","database":"connected"}``
+
+Use this for load balancer health checks or monitoring (e.g., Prometheus blackbox exporter).
 
 Logging
 -------
@@ -174,8 +155,9 @@ The script performs:
 - `systemctl restart cte-time`
 
 System deployment templates are stored in this repository:
-- `deploy/cte-time.service`
-- `deploy/nginx-cte-time.conf`
+- `deploy/cte-time.service` — systemd unit
+- `deploy/nginx-cte-time.conf` — nginx reverse proxy with TLS hardening and security headers
+- `backup.sh` — automated backup with WAL checkpoint, retention, and lock safety (also at `deploy/backup.sh`)
 
 Development
 -----------

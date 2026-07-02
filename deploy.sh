@@ -49,15 +49,34 @@ else
   echo "WARNING: ${SERVICE_UNIT_FILE} not found; ensure service ExecStart includes --proxy-headers and forwarded allow list."
 fi
 
+echo "Validating nginx configuration..."
+if command -v nginx &>/dev/null; then
+    nginx -t || echo "WARNING: nginx configuration test failed; reload skipped."
+else
+    echo "WARNING: nginx not found on PATH; skipping config validation."
+fi
+
 echo "Restarting service..."
 systemctl restart "${SERVICE}"
 
 echo "Waiting for service to become active..."
-sleep 2
-if systemctl is-active --quiet "${SERVICE}"; then
-    echo "Deployment complete."
-else
+sleep 3
+if ! systemctl is-active --quiet "${SERVICE}"; then
     echo "ERROR: ${SERVICE} failed to start after deploy."
     systemctl status "${SERVICE}" --no-pager
     exit 1
 fi
+
+echo "Running post-deploy health check..."
+for i in 1 2 3; do
+    if curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
+        echo "Health check passed."
+        echo "Deployment complete."
+        exit 0
+    fi
+    sleep 2
+done
+
+echo "WARNING: Service started but health check failed after 3 attempts."
+systemctl status "${SERVICE}" --no-pager
+exit 1
