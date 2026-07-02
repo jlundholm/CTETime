@@ -14,6 +14,8 @@ class InMemoryRateLimiter:
     approach using SQLite's WAL mode for concurrent reads.
     """
 
+    EVICT_EVERY = 100
+
     def __init__(self, max_requests: int, window_seconds: int):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
@@ -29,7 +31,7 @@ class InMemoryRateLimiter:
 
     def check(self, key: str) -> int | None:
         self._check_count += 1
-        if self._check_count % 100 == 0:
+        if self._check_count % self.EVICT_EVERY == 0:
             self._evict_stale()
 
         now = time()

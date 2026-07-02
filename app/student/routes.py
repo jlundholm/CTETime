@@ -5,6 +5,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import aiosqlite
+import hmac
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
@@ -29,7 +30,7 @@ templates = Jinja2Templates(
 def validate_csrf_header(request: Request) -> bool:
     token = request.headers.get("x-csrf-token")
     expected = request.session.get("csrf_token")
-    if not expected or not token or expected != token:
+    if not expected or not token or not hmac.compare_digest(expected, token):
         return False
     return True
 
