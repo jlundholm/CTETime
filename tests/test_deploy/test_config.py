@@ -4,9 +4,6 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-from app.auth.staff import hash_password
-from app.database import run_migrations
-from app.main import create_app
 from app.config import get_settings
 
 
@@ -17,39 +14,19 @@ async def _get_admin_csrf(client: AsyncClient) -> str:
 
 
 @pytest_asyncio.fixture
-async def production_client(test_database_path, monkeypatch):
-    monkeypatch.setenv("SECRET_KEY", "a" * 64)
-    monkeypatch.setenv("DATABASE_PATH", test_database_path)
-    monkeypatch.setenv("HOST", "127.0.0.1")
-    monkeypatch.setenv("PORT", "8001")
-    monkeypatch.setenv("LOG_DIR", str(Path(test_database_path).parent / "logs"))
-    monkeypatch.setenv("BACKUP_DIR", str(Path(test_database_path).parent / "backups"))
-    monkeypatch.setenv("APP_VERSION", "1.0.0")
-    monkeypatch.setenv("IS_PRODUCTION", "true")
-    monkeypatch.setenv("SESSION_MAX_AGE", "28800")
-    monkeypatch.setenv("SESSION_SAME_SITE", "lax")
-    get_settings.cache_clear()
-
-    await run_migrations(test_database_path)
-    import aiosqlite
-
-    async with aiosqlite.connect(test_database_path) as connection:
-        await connection.execute("PRAGMA foreign_keys = ON")
-        await connection.execute(
-            (
-                "INSERT INTO admins (first_name, last_name, email, password_hash) "
-                "VALUES (?, ?, ?, ?)"
-            ),
-            ("Prod", "Admin", "admin@example.com", hash_password("test-password")),
-        )
-        await connection.commit()
-
-    app_instance = create_app()
-    transport = ASGITransport(app=app_instance)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
-        yield async_client
-
-    get_settings.cache_clear()
+async def production_client(app_factory):
+    async with app_factory(
+        extra_env={
+            "SECRET_KEY": "a" * 64,
+            "IS_PRODUCTION": "true",
+            "SESSION_MAX_AGE": "28800",
+            "SESSION_SAME_SITE": "lax",
+        },
+        admin_name=("Prod", "Admin"),
+    ) as app_instance:
+        transport = ASGITransport(app=app_instance)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as async_client:
+            yield async_client
 
 
 def test_settings_load_display_timezone_from_env(monkeypatch):
