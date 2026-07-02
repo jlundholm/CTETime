@@ -70,6 +70,7 @@ def validate_csrf_token(request: Request, csrf_token: str) -> None:
     expected = request.session.get("csrf_token")
     if not expected or expected != csrf_token:
         raise HTTPException(status_code=403, detail="Invalid CSRF token")
+    request.session["csrf_token"] = uuid4().hex
 
 
 def rotate_csrf_token(request: Request) -> None:

@@ -10,8 +10,9 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.auth.student import destroy_student_session
 from app.config import get_settings
-from app.shared.helpers import ensure_utc, get_display_timezone, parse_iso_datetime, pop_flash, utc_now
+from app.shared.helpers import ensure_utc, flash, get_display_timezone, parse_iso_datetime, pop_flash, utc_now
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,36 @@ async def get_active_school_year_id(connection: aiosqlite.Connection) -> int | N
     ) as cursor:
         row = await cursor.fetchone()
     return row[0] if row else None
+
+
+async def validate_student_session(
+    connection: aiosqlite.Connection,
+    request: Request,
+) -> tuple[int, int | None] | None:
+    student_id = request.session.get("student_id")
+    if student_id is None:
+        return None
+
+    active_school_year_id = await get_active_school_year_id(connection)
+    if active_school_year_id is not None:
+        async with connection.execute(
+            "SELECT id FROM students WHERE id = ? AND school_year_id = ?",
+            (student_id, active_school_year_id),
+        ) as cursor:
+            active_student = await cursor.fetchone()
+        if not active_student:
+            flash(request, "Your session has expired. Please sign in again.", "error")
+            destroy_student_session(request.session)
+            return None
+    else:
+        async with connection.execute("SELECT id FROM students WHERE id = ?", (student_id,)) as cursor:
+            student_exists = await cursor.fetchone()
+        if not student_exists:
+            flash(request, "Your session has expired. Please sign in again.", "error")
+            destroy_student_session(request.session)
+            return None
+
+    return int(student_id), active_school_year_id
 
 
 async def get_open_punch(
@@ -208,7 +239,6 @@ async def clock_screen(request: Request):
     if not require_student(request):
         return RedirectResponse(url="/student/login", status_code=303)
 
-    student_id = request.session.get("student_id")
     settings = get_settings()
     in_session = False
     weekly_log: list[dict[str, str]] = []
@@ -216,8 +246,12 @@ async def clock_screen(request: Request):
 
     try:
         async with aiosqlite.connect(settings.database_path) as connection:
-            school_year_id = await get_active_school_year_id(connection)
-            if school_year_id is not None and student_id is not None:
+            validated = await validate_student_session(connection, request)
+            if validated is None:
+                return RedirectResponse(url="/student/login", status_code=303)
+
+            student_id, school_year_id = validated
+            if school_year_id is not None:
                 open_punch = await get_open_punch(connection, student_id, school_year_id)
                 in_session = open_punch is not None
                 weekly_log, week_total = await get_weekly_log(connection, student_id, school_year_id)
@@ -242,17 +276,26 @@ async def clock_log(request: Request):
     if not require_student(request):
         return JSONResponse({"success": False, "error": "unauthorized"}, status_code=401)
 
-    student_id = request.session.get("student_id")
-    if student_id is None:
-        return JSONResponse({"success": False, "error": "unauthorized"}, status_code=401)
-
     settings = get_settings()
     weekly_log: list[dict[str, str]] = []
     week_total = "0m"
 
     try:
         async with aiosqlite.connect(settings.database_path) as connection:
-            school_year_id = await get_active_school_year_id(connection)
+            validated = await validate_student_session(connection, request)
+            if validated is None:
+                return JSONResponse({"success": False, "error": "unauthorized"}, status_code=401)
+
+            student_id, school_year_id = validated
+            if school_year_id is None:
+                return JSONResponse(
+                    {
+                        "success": False,
+                        "error": "no_active_school_year",
+                        "message": "No active school year.",
+                    },
+                    status_code=400,
+                )
             weekly_log, week_total = await get_weekly_log(connection, student_id, school_year_id)
     except Exception:
         logger.exception("Failed to load weekly log partial")
@@ -274,14 +317,20 @@ async def clock_in(request: Request):
             status_code=401,
         )
 
-    student_id = request.session.get("student_id")
     settings = get_settings()
     now = utc_now()
 
     try:
         async with aiosqlite.connect(settings.database_path) as connection:
-            school_year_id = await get_active_school_year_id(connection)
-            if school_year_id is None or student_id is None:
+            validated = await validate_student_session(connection, request)
+            if validated is None:
+                return JSONResponse(
+                    {"success": False, "error": "unauthorized", "message": "Please sign in."},
+                    status_code=401,
+                )
+
+            student_id, school_year_id = validated
+            if school_year_id is None:
                 return JSONResponse(
                     {
                         "success": False,
@@ -348,14 +397,20 @@ async def clock_out(request: Request):
             status_code=401,
         )
 
-    student_id = request.session.get("student_id")
     settings = get_settings()
     now = utc_now()
 
     try:
         async with aiosqlite.connect(settings.database_path) as connection:
-            school_year_id = await get_active_school_year_id(connection)
-            if school_year_id is None or student_id is None:
+            validated = await validate_student_session(connection, request)
+            if validated is None:
+                return JSONResponse(
+                    {"success": False, "error": "unauthorized", "message": "Please sign in."},
+                    status_code=401,
+                )
+
+            student_id, school_year_id = validated
+            if school_year_id is None:
                 return JSONResponse(
                     {
                         "success": False,

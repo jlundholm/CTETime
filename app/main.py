@@ -4,7 +4,8 @@ from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 import aiosqlite
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
@@ -12,6 +13,7 @@ from app.admin.routes import router as admin_router
 from app.auth.routes import router as auth_router
 from app.config import get_settings
 from app.database import run_migrations
+from app.shared.rate_limit import InMemoryRateLimiter
 from app.student.routes import router as student_router
 from app.teacher.routes import router as teacher_router
 
@@ -69,6 +71,30 @@ async def lifespan(_: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="CTE Time", lifespan=lifespan)
+    rate_limiter = InMemoryRateLimiter(
+        max_requests=settings.rate_limit_max_requests,
+        window_seconds=settings.rate_limit_window_seconds,
+    )
+
+    @app.middleware("http")
+    async def rate_limit_posts(request: Request, call_next):
+        if request.method in {"GET", "HEAD", "OPTIONS"}:
+            return await call_next(request)
+
+        client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        if not client_ip:
+            client_ip = request.client.host if request.client else "unknown"
+
+        retry_after = rate_limiter.check(client_ip)
+        if retry_after is not None:
+            return JSONResponse(
+                {"success": False, "error": "rate_limited", "message": "Too many requests."},
+                status_code=429,
+                headers={"Retry-After": str(retry_after)},
+            )
+
+        return await call_next(request)
+
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.secret_key,

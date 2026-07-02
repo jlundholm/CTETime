@@ -20,7 +20,6 @@ from app.shared.helpers import (
     parse_csv,
     pop_flash,
     required_columns_for_rows,
-    rotate_csrf_token,
     validate_csrf_token,
     validate_import_rows,
 )
@@ -246,7 +245,6 @@ async def create_school_year(
             },
         )
 
-    rotate_csrf_token(request)
     flash(request, "School year created.", "success")
     return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
@@ -460,7 +458,6 @@ async def create_user(
                 },
             )
 
-        rotate_csrf_token(request)
         flash(request, "Student created.", "success")
         return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
@@ -493,7 +490,6 @@ async def create_user(
             },
         )
 
-    rotate_csrf_token(request)
     flash(request, "Teacher created.", "success")
     return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
@@ -541,7 +537,6 @@ async def deactivate_teacher(request: Request, year_id: int, teacher_id: int, cs
         flash(request, "A database error occurred.", "error")
         return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
-    rotate_csrf_token(request)
     flash(request, "Teacher deactivated.", "success")
     return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
@@ -730,7 +725,6 @@ async def import_users_confirm(
     request.session.pop("import_preview", None)
     request.session.pop("import_year_id", None)
 
-    rotate_csrf_token(request)
     flash(
         request,
         (
@@ -755,7 +749,6 @@ async def import_users_cancel(request: Request, year_id: int, csrf_token: str = 
     request.session.pop("import_preview", None)
     request.session.pop("import_year_id", None)
     request.session.pop("import_missing_columns", None)
-    rotate_csrf_token(request)
     return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
 
@@ -843,7 +836,6 @@ async def purge_school_year(
         flash(request, "A database error occurred.", "error")
         return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
-    rotate_csrf_token(request)
     flash(request, "Data purged.", "success")
     return RedirectResponse(url="/admin/dashboard", status_code=303)
 
@@ -874,6 +866,5 @@ async def end_school_year(request: Request, year_id: int, csrf_token: str = Form
         flash(request, "A database error occurred.", "error")
         return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
-    rotate_csrf_token(request)
     flash(request, "School year ended.", "success")
     return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
