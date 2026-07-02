@@ -34,8 +34,33 @@ def test_nginx_config_has_required_hardening_directives() -> None:
     assert 'add_header X-Frame-Options "DENY" always;' in nginx_text
     assert 'add_header X-XSS-Protection "0" always;' in nginx_text
     assert 'add_header Referrer-Policy "strict-origin-when-cross-origin" always;' in nginx_text
+    assert 'add_header Content-Security-Policy "default-src' in nginx_text
     assert "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;" in nginx_text
     assert "proxy_set_header X-Forwarded-Proto $scheme;" in nginx_text
+
+
+def test_nginx_config_tls_hardening() -> None:
+    nginx_text = (_repo_root() / "cte-time.nginx.conf").read_text(encoding="utf-8")
+
+    assert "ssl_protocols TLSv1.2 TLSv1.3;" in nginx_text
+    assert "ssl_prefer_server_ciphers off;" in nginx_text
+    assert "ssl_session_cache shared:SSL:10m;" in nginx_text
+    assert "ssl_session_timeout 1d;" in nginx_text
+    assert "ssl_session_tickets off;" in nginx_text
+
+
+def test_nginx_config_has_http_https_redirect() -> None:
+    nginx_text = (_repo_root() / "cte-time.nginx.conf").read_text(encoding="utf-8")
+
+    assert "listen 80;" in nginx_text
+    assert "return 301 https://$host$request_uri;" in nginx_text
+
+
+def test_nginx_config_uses_map_for_proxy_redirect() -> None:
+    nginx_text = (_repo_root() / "cte-time.nginx.conf").read_text(encoding="utf-8")
+
+    assert "map $http_x_forwarded_proto $should_https_redirect" in nginx_text
+    assert "if ($should_https_redirect)" in nginx_text
 
 
 def test_backup_script_handles_duplicate_run(tmp_path: Path) -> None:
