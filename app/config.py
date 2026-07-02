@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     rate_limit_max_requests: int = Field(default=60, gt=0)
     rate_limit_window_seconds: int = Field(default=60, gt=0)
+    week_start_day: int = Field(default=0, ge=0, le=6)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

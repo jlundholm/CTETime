@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.auth.student import destroy_student_session
 from app.config import get_settings
-from app.shared.helpers import ensure_utc, flash, get_display_timezone, parse_iso_datetime, pop_flash, utc_now
+from app.shared.helpers import ensure_utc, flash, get_display_timezone, get_week_start, parse_iso_datetime, pop_flash, utc_now
 
 
 logger = logging.getLogger(__name__)
@@ -110,19 +110,27 @@ async def validate_student_session(
 async def get_open_punch(
     connection: aiosqlite.Connection,
     student_id: int,
-    school_year_id: int,
+    school_year_id: int | None,
 ) -> aiosqlite.Row | None:
     original_factory = connection.row_factory
     connection.row_factory = aiosqlite.Row
     try:
-        async with connection.execute(
-            (
-                "SELECT id, clock_in_time FROM punches "
+        if school_year_id is None:
+            query = (
+                "SELECT id, clock_in_time, school_year_id FROM punches "
+                "WHERE student_id = ? AND clock_out_time IS NULL "
+                "ORDER BY id DESC LIMIT 1"
+            )
+            params = (student_id,)
+        else:
+            query = (
+                "SELECT id, clock_in_time, school_year_id FROM punches "
                 "WHERE student_id = ? AND school_year_id = ? AND clock_out_time IS NULL "
                 "ORDER BY id DESC LIMIT 1"
-            ),
-            (student_id, school_year_id),
-        ) as cursor:
+            )
+            params = (student_id, school_year_id)
+
+        async with connection.execute(query, params) as cursor:
             return await cursor.fetchone()
     finally:
         connection.row_factory = original_factory
@@ -134,16 +142,15 @@ async def get_weekly_log(
     school_year_id: int | None = None,
 ) -> tuple[list[dict[str, str]], str]:
     now = utc_now()
-    week_start = now - timedelta(days=now.weekday())
+    week_start = get_week_start(now)
     week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_end = week_start + timedelta(days=7)
 
     query = (
         "SELECT p.clock_in_time, p.clock_out_time "
         "FROM punches p "
-        "WHERE p.student_id = ? AND p.clock_in_time >= ? AND p.clock_in_time < ? "
+        "WHERE p.student_id = ? AND p.clock_in_time >= ? AND p.clock_in_time <= ? "
     )
-    params: list[Any] = [student_id, week_start.isoformat(), week_end.isoformat()]
+    params: list[Any] = [student_id, week_start.isoformat(), now.isoformat()]
     if school_year_id is not None:
         query += "AND p.school_year_id = ? "
         params.append(school_year_id)
@@ -253,6 +260,8 @@ async def clock_screen(request: Request):
             student_id, school_year_id = validated
             if school_year_id is not None:
                 open_punch = await get_open_punch(connection, student_id, school_year_id)
+                if open_punch is None:
+                    open_punch = await get_open_punch(connection, student_id, None)
                 in_session = open_punch is not None
                 weekly_log, week_total = await get_weekly_log(connection, student_id, school_year_id)
     except Exception:
@@ -341,6 +350,8 @@ async def clock_in(request: Request):
                 )
 
             existing = await get_open_punch(connection, student_id, school_year_id)
+            if existing is None:
+                existing = await get_open_punch(connection, student_id, None)
             if existing:
                 try:
                     clocked_in_time = datetime.fromisoformat(existing["clock_in_time"])
@@ -421,6 +432,8 @@ async def clock_out(request: Request):
                 )
 
             existing = await get_open_punch(connection, student_id, school_year_id)
+            if existing is None:
+                existing = await get_open_punch(connection, student_id, None)
             if not existing:
                 return JSONResponse(
                     {

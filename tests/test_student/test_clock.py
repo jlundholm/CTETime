@@ -294,3 +294,161 @@ async def test_clock_in_handles_db_error(client, app):
         assert payload["error"] == "server_error"
     finally:
         aiosqlite.connect = original_connect
+
+
+@pytest.mark.asyncio
+async def test_clock_out_closes_prior_year_open_punch_when_active_year_changes(client, app):
+    await create_student_pin(client, app, pin="123456")
+    await client.post("/auth/student/login", data={"pin": "123456"})
+
+    clock_in_response = await client.post("/student/clock-in")
+    assert clock_in_response.status_code == 200
+    assert clock_in_response.json()["success"] is True
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    async with aiosqlite.connect(settings.database_path) as connection:
+        async with connection.execute(
+            "SELECT id, school_year_id FROM students WHERE pin = ?",
+            ("123456",),
+        ) as cursor:
+            student_id, original_year_id = await cursor.fetchone()
+
+        await connection.execute("UPDATE school_years SET status = 'ended' WHERE id = ?", (original_year_id,))
+        year_cursor = await connection.execute(
+            "INSERT INTO school_years (name, start_date, end_date, status) VALUES (?, ?, ?, 'active')",
+            ("2027-2028", "2027-08-20", "2028-05-28"),
+        )
+        new_year_id = int(year_cursor.lastrowid)
+        await connection.execute(
+            "UPDATE students SET school_year_id = ? WHERE id = ?",
+            (new_year_id, student_id),
+        )
+        await connection.commit()
+
+    clock_out_response = await client.post("/student/clock-out")
+    assert clock_out_response.status_code == 200
+    payload = clock_out_response.json()
+    assert payload["success"] is True
+    assert payload["action"] == "clock_out"
+
+    async with aiosqlite.connect(settings.database_path) as connection:
+        async with connection.execute(
+            "SELECT school_year_id, clock_out_time FROM punches WHERE student_id = ? ORDER BY id",
+            (student_id,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+    assert len(rows) == 1
+    assert rows[0][0] == original_year_id
+    assert rows[0][1] is not None
+
+
+@pytest.mark.asyncio
+async def test_get_active_school_year_id_prefers_most_recent_active(app):
+    from app.config import get_settings
+    from app.student.routes import get_active_school_year_id
+
+    settings = get_settings()
+    async with aiosqlite.connect(settings.database_path) as connection:
+        await connection.execute(
+            "INSERT INTO school_years (name, start_date, end_date, status) VALUES (?, ?, ?, 'active')",
+            ("2026-2027", "2026-08-20", "2027-05-28"),
+        )
+        second = await connection.execute(
+            "INSERT INTO school_years (name, start_date, end_date, status) VALUES (?, ?, ?, 'active')",
+            ("2027-2028", "2027-08-20", "2028-05-28"),
+        )
+        await connection.commit()
+        year_id = await get_active_school_year_id(connection)
+
+    assert year_id == int(second.lastrowid)
+
+
+@pytest.mark.asyncio
+async def test_weekly_log_excludes_future_punches(client, app):
+    await create_student_pin(client, app, pin="123456")
+    await client.post("/auth/student/login", data={"pin": "123456"})
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    async with aiosqlite.connect(settings.database_path) as connection:
+        async with connection.execute("SELECT id, school_year_id FROM students WHERE pin = ?", ("123456",)) as cursor:
+            student_row = await cursor.fetchone()
+
+    student_id = int(student_row[0])
+    school_year_id = int(student_row[1])
+    now = datetime.now(timezone.utc)
+
+    await insert_punch(
+        app,
+        student_id=student_id,
+        school_year_id=school_year_id,
+        clock_in_time=(now - timedelta(hours=2)).isoformat(),
+        clock_out_time=(now - timedelta(hours=1)).isoformat(),
+    )
+    await insert_punch(
+        app,
+        student_id=student_id,
+        school_year_id=school_year_id,
+        clock_in_time=(now + timedelta(hours=1)).isoformat(),
+        clock_out_time=(now + timedelta(hours=2)).isoformat(),
+    )
+
+    response = await client.get("/student/clock/log")
+    assert response.status_code == 200
+    assert "1h 0m" in response.text
+    assert "2h 0m" not in response.text
+
+
+@pytest.mark.asyncio
+async def test_week_start_day_setting_changes_student_weekly_total(client, app, monkeypatch):
+    await create_student_pin(client, app, pin="123456")
+    await client.post("/auth/student/login", data={"pin": "123456"})
+
+    from app.config import get_settings
+    import app.student.routes as student_routes
+
+    fixed_now = datetime(2026, 9, 16, 12, 0, tzinfo=timezone.utc)  # Wednesday
+    monkeypatch.setattr(student_routes, "utc_now", lambda: fixed_now)
+
+    settings = get_settings()
+    async with aiosqlite.connect(settings.database_path) as connection:
+        async with connection.execute("SELECT id, school_year_id FROM students WHERE pin = ?", ("123456",)) as cursor:
+            student_row = await cursor.fetchone()
+
+    student_id = int(student_row[0])
+    school_year_id = int(student_row[1])
+
+    sunday_in = datetime(2026, 9, 13, 8, 0, tzinfo=timezone.utc)
+    sunday_out = datetime(2026, 9, 13, 9, 0, tzinfo=timezone.utc)
+    monday_in = datetime(2026, 9, 14, 8, 0, tzinfo=timezone.utc)
+    monday_out = datetime(2026, 9, 14, 9, 0, tzinfo=timezone.utc)
+
+    await insert_punch(
+        app,
+        student_id=student_id,
+        school_year_id=school_year_id,
+        clock_in_time=sunday_in.isoformat(),
+        clock_out_time=sunday_out.isoformat(),
+    )
+    await insert_punch(
+        app,
+        student_id=student_id,
+        school_year_id=school_year_id,
+        clock_in_time=monday_in.isoformat(),
+        clock_out_time=monday_out.isoformat(),
+    )
+
+    monkeypatch.setenv("WEEK_START_DAY", "0")
+    get_settings.cache_clear()
+    monday_week = await client.get("/student/clock/log")
+    assert monday_week.status_code == 200
+    assert "1h 0m" in monday_week.text
+
+    monkeypatch.setenv("WEEK_START_DAY", "6")
+    get_settings.cache_clear()
+    sunday_week = await client.get("/student/clock/log")
+    assert sunday_week.status_code == 200
+    assert "2h 0m" in sunday_week.text

@@ -3,7 +3,7 @@ import io
 import random
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -31,6 +31,15 @@ def ensure_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
+
+
+def get_week_start(value: datetime) -> datetime:
+    current = ensure_utc(value)
+    from app.config import get_settings
+
+    week_start_day = get_settings().week_start_day
+    days_since_week_start = (current.weekday() - week_start_day) % 7
+    return current - timedelta(days=days_since_week_start)
 
 
 def parse_iso_datetime(value: str | None) -> datetime | None:

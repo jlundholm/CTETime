@@ -1,7 +1,7 @@
 import logging
 import csv
 import io
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +11,15 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
-from app.shared.helpers import ensure_utc, flash, get_csrf_token, get_display_timezone, pop_flash, validate_csrf_token
+from app.shared.helpers import (
+    ensure_utc,
+    flash,
+    get_csrf_token,
+    get_display_timezone,
+    get_week_start,
+    pop_flash,
+    validate_csrf_token,
+)
 
 
 router = APIRouter(prefix="/teacher", tags=["teacher"])
@@ -75,7 +83,7 @@ def _normalize_date(value: str | None) -> str | None:
 
 
 def _week_start_for(date_value: datetime) -> datetime:
-    return date_value - timedelta(days=date_value.weekday())
+    return get_week_start(date_value)
 
 
 @router.get("/login")
