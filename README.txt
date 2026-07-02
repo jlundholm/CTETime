@@ -41,6 +41,8 @@ Installation
         ADMIN_EMAIL=admin@example.com
         ADMIN_PASSWORD=<strong-password>
 
+    WARNING: Never commit .env to version control. Add it to .gitignore.
+
     On first application start, if no admin accounts exist in the database, an admin
     will be created with these credentials. The admin is created with bcrypt-hashed
     password and the event is logged. Once seeded, subsequent startups do not

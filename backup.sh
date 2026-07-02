@@ -4,6 +4,14 @@ set -euo pipefail
 BACKUP_DIR="${BACKUP_DIR:-/opt/cte-time/backups}"
 DB_PATH="${DB_PATH:-/opt/cte-time/data/cte_time.db}"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-90}"
+
+case "$RETENTION_DAYS" in
+  ''|*[!0-9]*)
+    log_error "BACKUP_RETENTION_DAYS must be a positive integer, got: $RETENTION_DAYS"
+    exit 1
+    ;;
+esac
+
 STAMP="$(date +%Y%m%d)" || STAMP=""
 
 log_error() {
@@ -56,4 +64,6 @@ fi
 
 printf 'Backup created: %s\n' "$backup_file"
 
-find "$BACKUP_DIR" -name 'cte_time-*.db' -mtime "+$RETENTION_DAYS" -delete
+if [[ -n "$BACKUP_DIR" && "$BACKUP_DIR" != "/" ]]; then
+  find "$BACKUP_DIR" -name 'cte_time-*.db' -mtime "+$RETENTION_DAYS" -delete 2>/dev/null || true
+fi

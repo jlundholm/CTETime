@@ -16,6 +16,23 @@ async def _admin_login(client):
     return token
 
 
+def _csrf_headers(response_text: str) -> dict[str, str]:
+    token = response_text.split('data-csrf-token="')[1].split('"')[0]
+    return {"X-CSRF-Token": token}
+
+
+async def _teacher_login_and_csrf(client) -> dict[str, str]:
+    form = await client.get("/teacher/login")
+    token = form.text.split('name="csrf_token" value="')[1].split('"')[0]
+    await client.post(
+        "/auth/teacher/login",
+        data={"email": "teacher@example.com", "password": "teacher-pass", "csrf_token": token},
+    )
+    page = await client.get("/teacher/dashboard")
+    token = page.text.split('name="csrf_token" value="')[1].split('"')[0]
+    return {"X-CSRF-Token": token}
+
+
 @pytest.mark.asyncio
 async def test_csrf_token_rotates_and_old_token_is_rejected(client):
     await _admin_login(client)
@@ -71,6 +88,10 @@ async def test_tampered_student_session_is_cleared_and_redirected(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
 
+    from tests.test_student.test_clock import _clock_page_csrf
+
+    headers = await _clock_page_csrf(client)
+
     from app.config import get_settings
 
     settings = get_settings()
@@ -82,6 +103,69 @@ async def test_tampered_student_session_is_cleared_and_redirected(client, app):
     assert clock_page.status_code == 303
     assert clock_page.headers["location"] == "/student/login"
 
-    clock_in = await client.post("/student/clock-in")
+    clock_in = await client.post("/student/clock-in", headers=headers)
     assert clock_in.status_code == 401
     assert clock_in.json()["error"] == "unauthorized"
+
+
+@pytest.mark.asyncio
+async def test_student_clock_in_requires_csrf_token(client, app):
+    await create_student_pin(client, app, pin="123456")
+    await client.post("/auth/student/login", data={"pin": "123456"})
+
+    response = await client.post("/student/clock-in")
+    assert response.status_code == 403
+    payload = response.json()
+    assert payload["error"] == "invalid_csrf"
+
+    response = await client.post("/student/clock-out")
+    assert response.status_code == 403
+    payload = response.json()
+    assert payload["error"] == "invalid_csrf"
+
+
+@pytest.mark.asyncio
+async def test_student_clock_in_with_wrong_csrf_token_is_rejected(client, app):
+    await create_student_pin(client, app, pin="123456")
+    await client.post("/auth/student/login", data={"pin": "123456"})
+
+    response = await client.post("/student/clock-in", headers={"X-CSRF-Token": "invalid"})
+    assert response.status_code == 403
+    payload = response.json()
+    assert payload["error"] == "invalid_csrf"
+
+
+def test_rate_limiter_stale_key_eviction():
+    from app.shared.rate_limit import InMemoryRateLimiter
+
+    limiter = InMemoryRateLimiter(max_requests=1000, window_seconds=1)
+
+    key = "test-key"
+    for _ in range(3):
+        assert limiter.check(key) is None
+
+    assert key in limiter._records
+    assert len(limiter._records[key]) == 3
+
+    import time
+
+    time.sleep(1.1)
+
+    for _ in range(100):
+        assert limiter.check("other") is None
+
+    assert key not in limiter._records
+
+
+def test_rate_limiter_retains_active_keys():
+    from app.shared.rate_limit import InMemoryRateLimiter
+
+    limiter = InMemoryRateLimiter(max_requests=1000, window_seconds=60)
+    key = "active"
+    for _ in range(3):
+        assert limiter.check(key) is None
+
+    for _ in range(100):
+        assert limiter.check("other") is None
+
+    assert key in limiter._records

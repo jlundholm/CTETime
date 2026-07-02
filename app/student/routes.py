@@ -12,7 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.auth.student import destroy_student_session
 from app.config import get_settings
-from app.shared.helpers import ensure_utc, flash, get_display_timezone, get_week_start, parse_iso_datetime, pop_flash, utc_now
+from app.shared.helpers import ensure_utc, flash, get_csrf_token, get_display_timezone, get_week_start, parse_iso_datetime, pop_flash, utc_now
 
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,14 @@ templates = Jinja2Templates(
 )
 
 
+def validate_csrf_header(request: Request) -> bool:
+    token = request.headers.get("x-csrf-token")
+    expected = request.session.get("csrf_token")
+    if not expected or not token or expected != token:
+        return False
+    return True
+
+
 def require_student(request: Request) -> bool:
     return request.session.get("student_id") is not None
 
@@ -34,6 +42,7 @@ def render_student_template(request: Request, name: str, context: dict[str, Any]
     base_context = {
         "flash": pop_flash(request),
         "student_name": request.session.get("student_name") or "Student",
+        "csrf_token": get_csrf_token(request),
     }
     base_context.update(context)
     return templates.TemplateResponse(request=request, name=name, context=base_context)
@@ -326,6 +335,12 @@ async def clock_in(request: Request):
             status_code=401,
         )
 
+    if not validate_csrf_header(request):
+        return JSONResponse(
+            {"success": False, "error": "invalid_csrf", "message": "Invalid request."},
+            status_code=403,
+        )
+
     settings = get_settings()
     now = utc_now()
 
@@ -406,6 +421,12 @@ async def clock_out(request: Request):
         return JSONResponse(
             {"success": False, "error": "unauthorized", "message": "Please sign in."},
             status_code=401,
+        )
+
+    if not validate_csrf_header(request):
+        return JSONResponse(
+            {"success": False, "error": "invalid_csrf", "message": "Invalid request."},
+            status_code=403,
         )
 
     settings = get_settings()

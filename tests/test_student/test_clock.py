@@ -6,6 +6,16 @@ import pytest
 from tests.test_student.test_auth import create_student_pin
 
 
+def _csrf_headers(client, response_text: str) -> dict[str, str]:
+    token = response_text.split('data-csrf-token="')[1].split('"')[0]
+    return {"X-CSRF-Token": token}
+
+
+async def _clock_page_csrf(client) -> dict[str, str]:
+    page = await client.get("/student/clock")
+    return _csrf_headers(client, page.text)
+
+
 async def insert_punch(
     app,
     *,
@@ -51,8 +61,9 @@ async def test_clock_screen_loads_with_initial_button_states(client, app):
 async def test_clock_in_creates_open_punch(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
+    headers = await _clock_page_csrf(client)
 
-    response = await client.post("/student/clock-in")
+    response = await client.post("/student/clock-in", headers=headers)
     assert response.status_code == 200
     payload = response.json()
     assert payload["success"] is True
@@ -74,11 +85,12 @@ async def test_clock_in_creates_open_punch(client, app):
 async def test_clock_in_twice_returns_already_clocked_in(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
+    headers = await _clock_page_csrf(client)
 
-    first = await client.post("/student/clock-in")
+    first = await client.post("/student/clock-in", headers=headers)
     assert first.status_code == 200
 
-    second = await client.post("/student/clock-in")
+    second = await client.post("/student/clock-in", headers=headers)
     payload = second.json()
     assert payload["success"] is False
     assert payload["error"] == "already_clocked_in"
@@ -89,9 +101,10 @@ async def test_clock_in_twice_returns_already_clocked_in(client, app):
 async def test_clock_out_after_clock_in_sets_clock_out_time(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
-    await client.post("/student/clock-in")
+    headers = await _clock_page_csrf(client)
+    await client.post("/student/clock-in", headers=headers)
 
-    response = await client.post("/student/clock-out")
+    response = await client.post("/student/clock-out", headers=headers)
     assert response.status_code == 200
     payload = response.json()
     assert payload["success"] is True
@@ -104,8 +117,9 @@ async def test_clock_out_after_clock_in_sets_clock_out_time(client, app):
 async def test_clock_out_without_open_session_returns_message(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
+    headers = await _clock_page_csrf(client)
 
-    response = await client.post("/student/clock-out")
+    response = await client.post("/student/clock-out", headers=headers)
     assert response.status_code == 200
     payload = response.json()
     assert payload["success"] is False
@@ -117,6 +131,7 @@ async def test_clock_out_without_open_session_returns_message(client, app):
 async def test_clock_actions_handle_no_active_school_year(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
+    headers = await _clock_page_csrf(client)
 
     from app.config import get_settings
 
@@ -125,7 +140,7 @@ async def test_clock_actions_handle_no_active_school_year(client, app):
         await connection.execute("UPDATE school_years SET status = 'ended'")
         await connection.commit()
 
-    response = await client.post("/student/clock-in")
+    response = await client.post("/student/clock-in", headers=headers)
     assert response.status_code == 400
     payload = response.json()
     assert payload["success"] is False
@@ -218,7 +233,8 @@ async def test_weekly_log_partial_updates_after_clock_in(client, app):
     assert before.status_code == 200
     assert "weekly-log-table" not in before.text
 
-    clock_in = await client.post("/student/clock-in")
+    headers = await _clock_page_csrf(client)
+    clock_in = await client.post("/student/clock-in", headers=headers)
     assert clock_in.status_code == 200
     assert clock_in.json()["success"] is True
 
@@ -245,7 +261,8 @@ async def test_student_logout_clears_session_and_redirects(client, app):
 async def test_student_logout_does_not_close_open_punch(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
-    await client.post("/student/clock-in")
+    headers = await _clock_page_csrf(client)
+    await client.post("/student/clock-in", headers=headers)
 
     logout_response = await client.post("/auth/student/logout", follow_redirects=False)
     assert logout_response.status_code == 303
@@ -275,6 +292,7 @@ async def test_clock_out_requires_auth(client):
 async def test_clock_in_handles_db_error(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
+    headers = await _clock_page_csrf(client)
 
     original_connect = aiosqlite.connect
 
@@ -287,7 +305,7 @@ async def test_clock_in_handles_db_error(client, app):
 
     try:
         aiosqlite.connect = lambda *a, **kw: _MockDB()
-        response = await client.post("/student/clock-in")
+        response = await client.post("/student/clock-in", headers=headers)
         assert response.status_code == 500
         payload = response.json()
         assert payload["success"] is False
@@ -300,8 +318,9 @@ async def test_clock_in_handles_db_error(client, app):
 async def test_clock_out_closes_prior_year_open_punch_when_active_year_changes(client, app):
     await create_student_pin(client, app, pin="123456")
     await client.post("/auth/student/login", data={"pin": "123456"})
+    headers = await _clock_page_csrf(client)
 
-    clock_in_response = await client.post("/student/clock-in")
+    clock_in_response = await client.post("/student/clock-in", headers=headers)
     assert clock_in_response.status_code == 200
     assert clock_in_response.json()["success"] is True
 
@@ -327,7 +346,7 @@ async def test_clock_out_closes_prior_year_open_punch_when_active_year_changes(c
         )
         await connection.commit()
 
-    clock_out_response = await client.post("/student/clock-out")
+    clock_out_response = await client.post("/student/clock-out", headers=headers)
     assert clock_out_response.status_code == 200
     payload = clock_out_response.json()
     assert payload["success"] is True

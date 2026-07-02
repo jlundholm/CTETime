@@ -1,7 +1,7 @@
 {% extends "student_base.html" %}
 
 {% block student_content %}
-<section class="student-login-card clock-screen" data-clock-screen>
+  <section class="student-login-card clock-screen" data-clock-screen data-csrf-token="{{ csrf_token }}">
   <div class="clock-header">
     <form method="post" action="/auth/student/logout" class="logout-form">
       <button type="submit" class="logout-link">Log Out</button>

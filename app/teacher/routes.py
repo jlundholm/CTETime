@@ -86,6 +86,21 @@ def _week_start_for(date_value: datetime) -> datetime:
     return get_week_start(date_value)
 
 
+def _check_export_rate_limit(request: Request) -> JSONResponse | None:
+    rate_limiter = request.app.state.export_rate_limiter
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.client.host if request.client else "unknown"
+    retry_after = rate_limiter.check(client_ip)
+    if retry_after is not None:
+        return JSONResponse(
+            {"success": False, "error": "rate_limited", "message": "Too many requests."},
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+        )
+    return None
+
+
 @router.get("/login")
 async def teacher_login_page(request: Request):
     return render_teacher_template(request, "login.html", {}, active_page=None)
@@ -456,6 +471,10 @@ async def export_class_csv(
     if not require_teacher(request):
         return RedirectResponse(url="/teacher/login", status_code=303)
 
+    rate_check = _check_export_rate_limit(request)
+    if rate_check is not None:
+        return rate_check
+
     teacher_id = request.session.get("teacher_id")
     school_year_id = request.session.get("school_year_id")
     if teacher_id is None or school_year_id is None:
@@ -525,6 +544,10 @@ async def export_student_csv(
 ):
     if not require_teacher(request):
         return RedirectResponse(url="/teacher/login", status_code=303)
+
+    rate_check = _check_export_rate_limit(request)
+    if rate_check is not None:
+        return rate_check
 
     teacher_id = request.session.get("teacher_id")
     school_year_id = request.session.get("school_year_id")

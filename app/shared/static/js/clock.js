@@ -4,6 +4,8 @@
     return;
   }
 
+  const csrfToken = screen.dataset.csrfToken;
+
   const clockInButton = document.getElementById("clock-in-btn");
   const clockOutButton = document.getElementById("clock-out-btn");
   const clockInTime = document.getElementById("clock-in-time");
@@ -67,6 +69,9 @@
     try {
       const response = await fetch(`/student/${action}`, {
         method: "POST",
+        headers: {
+          "X-CSRF-Token": csrfToken,
+        },
       });
       const payload = await response.json();
 

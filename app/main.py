@@ -61,8 +61,15 @@ def _configure_file_logging(log_dir: str) -> None:
 
 
 async def _seed_admin(database_path: str, email: str, password: str) -> None:
+    email = email.strip()
+    password = password.strip()
+
+    if not email and not password:
+        logger.info("ADMIN_EMAIL and ADMIN_PASSWORD not set; skipping admin bootstrap")
+        return
+
     if not email or not password:
-        logger.info("ADMIN_EMAIL or ADMIN_PASSWORD not set; skipping admin bootstrap")
+        logger.warning("ADMIN_EMAIL and ADMIN_PASSWORD must both be set; skipping bootstrap")
         return
 
     async with aiosqlite.connect(database_path) as conn:
@@ -72,7 +79,12 @@ async def _seed_admin(database_path: str, email: str, password: str) -> None:
             logger.info("Admin already exists; skipping bootstrap")
             return
 
-        password_hash = hash_password(password)
+        try:
+            password_hash = hash_password(password)
+        except Exception:
+            logger.error("Failed to hash admin password; skipping bootstrap")
+            return
+
         await conn.execute(
             "INSERT INTO admins (email, first_name, last_name, password_hash) VALUES (?, ?, ?, ?)",
             (email, "System", "Admin", password_hash),
@@ -98,6 +110,12 @@ def create_app() -> FastAPI:
         max_requests=settings.rate_limit_max_requests,
         window_seconds=settings.rate_limit_window_seconds,
     )
+    export_rate_limiter = InMemoryRateLimiter(
+        max_requests=settings.rate_limit_max_requests,
+        window_seconds=settings.rate_limit_window_seconds,
+    )
+    app.state.rate_limiter = rate_limiter
+    app.state.export_rate_limiter = export_rate_limiter
 
     @app.middleware("http")
     async def rate_limit_posts(request: Request, call_next):

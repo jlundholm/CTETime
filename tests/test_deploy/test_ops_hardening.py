@@ -74,10 +74,12 @@ def test_backup_script_handles_duplicate_run(tmp_path: Path) -> None:
 
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
+    sqlite3_log = tmp_path / "sqlite3_calls.log"
     fake_sqlite3 = fake_bin / "sqlite3"
     fake_sqlite3.write_text(
         "#!/usr/bin/env bash\n"
         "set -euo pipefail\n"
+        'echo "$*" >> "$SQLITE3_LOG"\n'
         'db="$1"\n'
         'cmd="$2"\n'
         'if [[ "$cmd" == ".backup "* ]]; then\n'
@@ -92,6 +94,7 @@ def test_backup_script_handles_duplicate_run(tmp_path: Path) -> None:
     env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
     env["BACKUP_DIR"] = str(backup_dir)
     env["DB_PATH"] = str(db_path)
+    env["SQLITE3_LOG"] = str(sqlite3_log)
 
     subprocess.run([str(script)], check=True, env=env, cwd=repo_root)
     subprocess.run([str(script)], check=True, env=env, cwd=repo_root)
@@ -99,6 +102,9 @@ def test_backup_script_handles_duplicate_run(tmp_path: Path) -> None:
     backups = sorted(backup_dir.glob("cte_time-*.db"))
     assert len(backups) == 2
     assert backups[0].name != backups[1].name
+
+    calls = sqlite3_log.read_text(encoding="utf-8").splitlines()
+    assert any("PRAGMA wal_checkpoint(TRUNCATE)" in line for line in calls)
 
 
 def test_backup_script_has_wal_checkpoint() -> None:
