@@ -1,3 +1,5 @@
+import logging
+
 import aiosqlite
 import pytest
 import pytest_asyncio
@@ -41,6 +43,7 @@ async def app(test_database_path, monkeypatch):
 
     app_instance = create_app()
     yield app_instance
+    logging.getLogger().handlers.clear()
     get_settings.cache_clear()
 
 

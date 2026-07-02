@@ -27,15 +27,23 @@ Installation
 
 4. Configure environment variables in /opt/cte-time/.env:
 
-       SECRET_KEY=<generate-a-random-secret>
+       SECRET_KEY=<64-char-random-hex>
        DATABASE_PATH=/opt/cte-time/data/cte_time.db
        HOST=127.0.0.1
        PORT=8000
        DISPLAY_TIMEZONE=America/Denver
+       IS_PRODUCTION=true
+       SESSION_MAX_AGE=28800
+       SESSION_SAME_SITE=lax
 
-   Generate the SECRET_KEY:
+    Generate the SECRET_KEY:
 
-       python3 -c "import secrets; print(secrets.token_hex(32))"
+        python3 -c "import secrets; print(secrets.token_hex(32))"
+
+    Lock down .env permissions for production:
+
+        sudo chown www-data:www-data /opt/cte-time/.env
+        sudo chmod 600 /opt/cte-time/.env
 
 5. Create the data directory:
 
@@ -87,10 +95,22 @@ Create /etc/nginx/sites-available/cte-time:
     server {
         listen 80;
         server_name cte-time.example.com;
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl;
+        server_name cte-time.example.com;
+
+        ssl_certificate /etc/letsencrypt/live/cte-time.example.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/cte-time.example.com/privkey.pem;
+
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
         location / {
             proxy_pass http://127.0.0.1:8000;
             proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
@@ -102,7 +122,7 @@ Enable the site:
     sudo nginx -t
     sudo systemctl reload nginx
 
-For HTTPS, configure Certbot:
+For HTTPS certificate provisioning via Certbot:
 
     sudo apt install certbot python3-certbot-nginx
     sudo certbot --nginx -d cte-time.example.com

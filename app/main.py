@@ -69,7 +69,13 @@ async def lifespan(_: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="CTE Time", lifespan=lifespan)
-    app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.secret_key,
+        max_age=settings.session_max_age,
+        https_only=settings.is_production,
+        same_site=settings.session_same_site,
+    )
 
     static_dir = Path(__file__).resolve().parent / "shared" / "static"
     static_dir.mkdir(parents=True, exist_ok=True)
