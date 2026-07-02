@@ -60,20 +60,23 @@ async def _seed_admin(test_database_path: str, first_name: str = "Test", last_na
 def app_factory(test_database_path, monkeypatch):
     @asynccontextmanager
     async def factory(*, extra_env: dict[str, str] | None = None, admin_name: tuple[str, str] = ("Test", "Admin")):
-        _apply_base_test_env(monkeypatch, test_database_path, extra_env)
-        get_settings.cache_clear()
-
-        await run_migrations(test_database_path)
-        await _seed_admin(test_database_path, *admin_name)
-
+        if len(admin_name) != 2:
+            raise ValueError(f"admin_name must be (first, last), got {admin_name}")
         initial_handler_count = len(logging.getLogger().handlers)
-        app_instance = create_app()
         try:
+            _apply_base_test_env(monkeypatch, test_database_path, extra_env)
+            get_settings.cache_clear()
+            await run_migrations(test_database_path)
+            await _seed_admin(test_database_path, *admin_name)
+            app_instance = create_app()
             yield app_instance
         finally:
             del logging.getLogger().handlers[initial_handler_count:]
             get_settings.cache_clear()
-            Path(test_database_path).unlink(missing_ok=True)
+            try:
+                Path(test_database_path).unlink(missing_ok=True)
+            except OSError:
+                pass
 
     return factory
 

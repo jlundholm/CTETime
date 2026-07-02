@@ -4,7 +4,7 @@ import pytest
 from app.config import get_settings
 
 
-_OVERRIDE_TIMEZONE = "Story53/TestZone"
+_OVERRIDE_TIMEZONE = "America/Chicago"
 
 
 @pytest.mark.asyncio
