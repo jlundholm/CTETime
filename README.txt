@@ -70,6 +70,12 @@ Installation
         sudo mkdir -p /var/log/cte-time
         sudo chown www-data:www-data /var/log/cte-time
 
+    After first startup, the database file is created. Lock down its permissions
+    so the app can read/write it but only root can change ownership:
+
+        sudo chown www-data:www-data /opt/cte-time/data/cte_time.db
+        sudo chmod 644 /opt/cte-time/data/cte_time.db
+
  6. Run database migrations (automatically runs on first start).
 
 Running

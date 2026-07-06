@@ -61,6 +61,7 @@ async def list_school_years(database_path: str) -> list[dict[str, Any]]:
                 rows = await cursor.fetchall()
                 return [dict(row) for row in rows]
     except aiosqlite.Error:
+        logger.exception("Failed to list school years")
         return []
 
 
@@ -75,6 +76,7 @@ async def get_school_year(database_path: str, year_id: int) -> dict[str, Any] | 
                 row = await cursor.fetchone()
                 return dict(row) if row else None
     except aiosqlite.Error:
+        logger.exception("Failed to get school year %s", year_id)
         return None
 
 
@@ -88,6 +90,7 @@ async def get_existing_student_pins(database_path: str, year_id: int) -> set[str
                 rows = await cursor.fetchall()
         return {row[0] for row in rows}
     except aiosqlite.Error:
+        logger.exception("Failed to get existing student pins")
         return set()
 
 
@@ -225,6 +228,7 @@ async def create_school_year(
                     },
                 )
     except IntegrityError:
+        logger.exception("Integrity error creating school year")
         return render_template(
             request,
             "year.html",
@@ -235,6 +239,7 @@ async def create_school_year(
             },
         )
     except aiosqlite.Error:
+        logger.exception("Database error creating school year")
         return render_template(
             request,
             "year.html",
@@ -435,6 +440,7 @@ async def create_user(
                 )
                 await connection.commit()
         except IntegrityError:
+            logger.exception("Integrity error creating student")
             errors["pin"] = "PIN must be unique."
             errors["form"] = "Please correct the highlighted errors."
             return render_template(
@@ -447,6 +453,7 @@ async def create_user(
                 },
             )
         except aiosqlite.Error:
+            logger.exception("Database error creating student")
             errors["form"] = "A database error occurred."
             return render_template(
                 request,
@@ -479,6 +486,7 @@ async def create_user(
             )
             await connection.commit()
     except aiosqlite.Error:
+        logger.exception("Database error creating teacher")
         errors["form"] = "A database error occurred."
         return render_template(
             request,
@@ -534,6 +542,7 @@ async def deactivate_teacher(request: Request, year_id: int, teacher_id: int, cs
             )
             await connection.commit()
     except aiosqlite.Error:
+        logger.exception("Database error deactivating teacher")
         flash(request, "A database error occurred.", "error")
         return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
@@ -833,6 +842,7 @@ async def purge_school_year(
                 await connection.rollback()
                 raise
     except aiosqlite.Error:
+        logger.exception("Database error purging school year")
         flash(request, "A database error occurred.", "error")
         return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
@@ -863,6 +873,7 @@ async def end_school_year(request: Request, year_id: int, csrf_token: str = Form
                 flash(request, "Year not found or already ended.", "error")
                 return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
     except aiosqlite.Error:
+        logger.exception("Database error ending school year")
         flash(request, "A database error occurred.", "error")
         return RedirectResponse(url=f"/admin/years/{year_id}", status_code=303)
 
