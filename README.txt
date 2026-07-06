@@ -13,7 +13,7 @@ Installation
 
 1. Clone the repository:
 
-       git clone <repo-url> /opt/cte-time
+       git clone https://github.com/jlundholm/CTETime /opt/cte-time
        cd /opt/cte-time
 
 2. Create a Python virtual environment and activate it:
@@ -25,37 +25,42 @@ Installation
 
        pip install -r requirements.txt
 
-4. Configure environment variables in /opt/cte-time/.env:
+4. Create the environment configuration from the template:
 
-       SECRET_KEY=<64-char-random-hex>
-       DATABASE_PATH=/opt/cte-time/data/cte_time.db
-       HOST=127.0.0.1
-       PORT=8000
-       DISPLAY_TIMEZONE=America/Denver
-       IS_PRODUCTION=true
-       SESSION_MAX_AGE=28800
-       SESSION_SAME_SITE=lax
+       cp .env.example .env
 
-    For first-run admin bootstrap, add these to create the initial admin account:
+    This copies all available settings with documented defaults. Then edit .env:
 
-        ADMIN_EMAIL=admin@example.com
-        ADMIN_PASSWORD=<strong-password>
+       nano .env
 
-    WARNING: Never commit .env to version control. Add it to .gitignore.
-
-    On first application start, if no admin accounts exist in the database, an admin
-    will be created with these credentials. The admin is created with bcrypt-hashed
-    password and the event is logged. Once seeded, subsequent startups do not
-    overwrite the admin — you can remove or change ADMIN_EMAIL/ADMIN_PASSWORD afterward.
-
-    Generate the SECRET_KEY:
+    At minimum, generate and set a strong SECRET_KEY:
 
         python3 -c "import secrets; print(secrets.token_hex(32))"
+
+    IMPORTANT — Admin bootstrap (first run only):
+    These are commented out in .env.example. Uncomment and set them BEFORE
+    starting the app:
+
+        ADMIN_EMAIL=admin@example.com
+        ADMIN_PASSWORD=<your-chosen-password>
+
+    On first startup, if ADMIN_EMAIL and ADMIN_PASSWORD are set and no admin
+    account exists in the database, an admin is created with those exact
+    credentials (bcrypt-hashed, logged to file). These are your login
+    credentials for the admin panel — they are not displayed on screen.
+
+    If you skip this step (leave both commented out), no admin account is
+    created. You can add them to .env later and restart the service.
+
+    Once seeded, subsequent startups do not overwrite the admin — you can
+    remove or change ADMIN_EMAIL/ADMIN_PASSWORD afterward.
 
     Lock down .env permissions for production:
 
         sudo chown www-data:www-data /opt/cte-time/.env
         sudo chmod 600 /opt/cte-time/.env
+
+    WARNING: .env is in .gitignore — it will never be committed. Keep it that way.
 
  5. Create the data directory:
 
