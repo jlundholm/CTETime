@@ -5,7 +5,7 @@ from pathlib import Path
 
 import aiosqlite
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
@@ -152,6 +152,10 @@ def create_app() -> FastAPI:
     app.include_router(admin_router)
     app.include_router(student_router)
     app.include_router(teacher_router)
+
+    @app.get("/")
+    async def root_redirect():
+        return RedirectResponse(url="/student/login", status_code=302)
 
     @app.get("/health")
     async def health_check() -> dict[str, str]:
