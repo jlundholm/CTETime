@@ -55,18 +55,20 @@ Installation
     Once seeded, subsequent startups do not overwrite the admin — you can
     remove or change ADMIN_EMAIL/ADMIN_PASSWORD afterward.
 
-    Lock down .env permissions for production:
-
-        sudo chown www-data:www-data /opt/cte-time/.env
-        sudo chmod 600 /opt/cte-time/.env
-
     WARNING: .env is in .gitignore — it will never be committed. Keep it that way.
 
- 5. Create the data directory:
+ 5. Set ownership and permissions for all deployed files.
+    The app runs as ``www-data`` but only needs read access to the code.
+    Secrets and writable directories need specific ownership:
 
-       mkdir -p /opt/cte-time/data
-       sudo mkdir -p /var/log/cte-time
-       sudo chown www-data:www-data /var/log/cte-time
+        sudo chown -R root:root /opt/cte-time
+        sudo chown root:www-data /opt/cte-time/.env
+        sudo chmod 640 /opt/cte-time/.env
+        sudo mkdir -p /opt/cte-time/data
+        sudo chown www-data:www-data /opt/cte-time/data
+        sudo chmod 750 /opt/cte-time/data
+        sudo mkdir -p /var/log/cte-time
+        sudo chown www-data:www-data /var/log/cte-time
 
  6. Run database migrations (automatically runs on first start).
 
@@ -85,6 +87,7 @@ Production with systemd
 Copy the systemd service unit from the repository:
 
     sudo cp /opt/cte-time/deploy/cte-time.service /etc/systemd/system/cte-time.service
+    sudo chmod 644 /etc/systemd/system/cte-time.service
 
 Enable and start the service:
 
