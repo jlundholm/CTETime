@@ -75,7 +75,7 @@ Installation
 Running
 -------
 
-Start the application server:
+Start the application server or use systemcd below:
 
     cd /opt/cte-time
     source .venv/bin/activate
