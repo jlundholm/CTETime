@@ -7,6 +7,7 @@ Prerequisites
 - Python 3.14+
 - nginx
 - Git
+- sqlite3
 
 Installation
 ------------
@@ -133,17 +134,29 @@ For HTTPS certificate provisioning via Certbot:
 Database Backup
 ---------------
 
-Use the backup script for daily SQLite dumps:
+Use the backup script for daily SQLite dumps. The script handles WAL checkpointing,
+retention (default 90 days via BACKUP_RETENTION_DAYS), and concurrency safety.
 
-    chmod +x /opt/cte-time/backup.sh
+Make the script executable:
+
+    sudo chmod +x /opt/cte-time/backup.sh
 
 Run it manually:
 
-    /opt/cte-time/backup.sh
+    sudo /opt/cte-time/backup.sh
 
-Add a cron job:
+Backups are written to /opt/cte-time/backups/ with filenames like
+cte_time-20260701-0001.db.
+
+Add a daily cron job at 2 AM:
+
+    sudo crontab -e
+
+Then add the line:
 
     0 2 * * * /opt/cte-time/backup.sh
+
+The script logs errors via logger (syslog). Check /var/log/syslog for details.
 
 Also rely on a third-party backup solution for full machine recovery.
 
