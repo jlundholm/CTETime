@@ -13,6 +13,18 @@
   <p class="inline-error">Missing required column(s): {{ missing_columns|join(", ") }}</p>
   {% endif %}
 
+  <div class="import-instructions">
+    <p>Upload a CSV file with the following columns:</p>
+    <ul>
+      <li><strong>firstName</strong> — First name (required)</li>
+      <li><strong>lastName</strong> — Last name (required)</li>
+      <li><strong>PIN</strong> — Exactly 6 digits. If present, the row is imported as a student. If blank, a Password is required (imported as teacher).</li>
+      <li><strong>Password</strong> — Required for teachers (rows without a PIN). Leave blank for students.</li>
+      <li><strong>Email</strong> — Optional email address.</li>
+    </ul>
+    <p><a href="/static/template.csv" download>Download template.csv</a></p>
+  </div>
+
   {% if not preview %}
   <form class="import-upload-form" action="/admin/years/{{ year.id }}/import" method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />

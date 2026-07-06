@@ -1,0 +1,3 @@
+firstName,lastName,PIN,Password,Email
+teacher1,example,,ABC123,null@example.com
+student1,example,123456,,
