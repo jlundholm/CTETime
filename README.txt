@@ -76,6 +76,13 @@ Installation
         sudo chown www-data:www-data /opt/cte-time/data/cte_time.db
         sudo chmod 644 /opt/cte-time/data/cte_time.db
 
+    The backup script creates backups in /opt/cte-time/backups. Create the
+    directory and restrict access:
+
+        sudo mkdir -p /opt/cte-time/backups
+        sudo chown root:root /opt/cte-time/backups
+        sudo chmod 750 /opt/cte-time/backups
+
  6. Run database migrations (automatically runs on first start).
 
 Running
