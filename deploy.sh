@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_DIR="/opt/cte-time"
 SERVICE="cte-time"
-SERVICE_UNIT_FILE="${APP_DIR}/cte-time.service"
+SERVICE_UNIT_FILE="${APP_DIR}/deploy/cte-time.service"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run as root (or with sudo)."

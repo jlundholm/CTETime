@@ -11,20 +11,20 @@ def _repo_root() -> Path:
 def test_ops_artifacts_exist() -> None:
     repo_root = _repo_root()
 
-    assert (repo_root / "cte-time.nginx.conf").exists()
-    assert (repo_root / "cte-time.service").exists()
+    assert (repo_root / "deploy" / "nginx-cte-time.conf").exists()
+    assert (repo_root / "deploy" / "cte-time.service").exists()
     assert (repo_root / "backup.sh").exists()
 
 
 def test_uvicorn_proxy_headers_in_deploy_script() -> None:
-    service_text = (_repo_root() / "cte-time.service").read_text(encoding="utf-8")
+    service_text = (_repo_root() / "deploy" / "cte-time.service").read_text(encoding="utf-8")
 
     assert "--proxy-headers" in service_text
     assert "--forwarded-allow-ips=127.0.0.1" in service_text
 
 
 def test_nginx_config_has_required_hardening_directives() -> None:
-    nginx_text = (_repo_root() / "cte-time.nginx.conf").read_text(encoding="utf-8")
+    nginx_text = (_repo_root() / "deploy" / "nginx-cte-time.conf").read_text(encoding="utf-8")
 
     assert "client_max_body_size 1M;" in nginx_text
     assert "proxy_connect_timeout 30s;" in nginx_text
@@ -40,7 +40,7 @@ def test_nginx_config_has_required_hardening_directives() -> None:
 
 
 def test_nginx_config_tls_hardening() -> None:
-    nginx_text = (_repo_root() / "cte-time.nginx.conf").read_text(encoding="utf-8")
+    nginx_text = (_repo_root() / "deploy" / "nginx-cte-time.conf").read_text(encoding="utf-8")
 
     assert "ssl_protocols TLSv1.2 TLSv1.3;" in nginx_text
     assert "ssl_prefer_server_ciphers off;" in nginx_text
@@ -51,7 +51,7 @@ def test_nginx_config_tls_hardening() -> None:
 
 
 def test_nginx_config_has_http_https_redirect() -> None:
-    nginx_text = (_repo_root() / "cte-time.nginx.conf").read_text(encoding="utf-8")
+    nginx_text = (_repo_root() / "deploy" / "nginx-cte-time.conf").read_text(encoding="utf-8")
 
     assert "listen 80;" in nginx_text
     assert "return 301 https://$host$request_uri;" in nginx_text

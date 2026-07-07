@@ -191,7 +191,7 @@ The script performs:
 System deployment templates are stored in this repository:
 - `deploy/cte-time.service` — systemd unit
 - `deploy/nginx-cte-time.conf` — nginx reverse proxy with TLS hardening and security headers
-- `backup.sh` — automated backup with WAL checkpoint, retention, and lock safety (also at `deploy/backup.sh`)
+- `backup.sh` — automated backup with WAL checkpoint, retention, and lock safety
 
 Development
 -----------

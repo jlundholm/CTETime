@@ -61,7 +61,7 @@ def test_deployment_artifacts_exist_with_expected_basics():
     repo_root = Path(__file__).resolve().parents[2]
 
     deploy_script = repo_root / "deploy.sh"
-    backup_script = repo_root / "deploy" / "backup.sh"
+    backup_script = repo_root / "backup.sh"
     service_file = repo_root / "deploy" / "cte-time.service"
     nginx_file = repo_root / "deploy" / "nginx-cte-time.conf"
 
