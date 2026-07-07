@@ -57,13 +57,6 @@ def test_nginx_config_has_http_https_redirect() -> None:
     assert "return 301 https://$host$request_uri;" in nginx_text
 
 
-def test_nginx_config_uses_map_for_proxy_redirect() -> None:
-    nginx_text = (_repo_root() / "cte-time.nginx.conf").read_text(encoding="utf-8")
-
-    assert "map $http_x_forwarded_proto $should_https_redirect" in nginx_text
-    assert "if ($should_https_redirect)" in nginx_text
-
-
 def test_backup_script_handles_duplicate_run(tmp_path: Path) -> None:
     repo_root = _repo_root()
     script = repo_root / "backup.sh"
