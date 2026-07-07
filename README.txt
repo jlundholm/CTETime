@@ -12,6 +12,15 @@ Prerequisites
 Installation
 ------------
 
+Quick start (interactive):
+
+    sudo ./install.sh
+
+The install script will prompt you for configuration and handle all steps
+below automatically. For manual installation, follow the steps below.
+
+Manual installation:
+
 1. Clone the repository:
 
        git clone https://github.com/jlundholm/CTETime /opt/cte-time
@@ -116,9 +125,15 @@ Verify the service is running:
 nginx Reverse Proxy
 -------------------
 
-Copy the hardened nginx config from the repository:
+Copy the nginx config from the repository. Choose the appropriate config:
+
+- `deploy/nginx-cte-time.conf` — HTTPS with TLS hardening (requires certbot)
+- `deploy/nginx-cte-time_http.conf` — plain HTTP (no TLS)
+
+Replace `__DOMAIN__` with your server's domain in the config.
 
     sudo cp /opt/cte-time/deploy/nginx-cte-time.conf /etc/nginx/sites-available/cte-time
+    sudo sed -i "s/__DOMAIN__/cte-time.example.com/g" /etc/nginx/sites-available/cte-time
 
 Enable the site:
 
@@ -192,6 +207,7 @@ System deployment templates are stored in this repository:
 - `deploy/cte-time.service` — systemd unit
 - `deploy/nginx-cte-time.conf` — nginx reverse proxy with TLS hardening and security headers
 - `backup.sh` — automated backup with WAL checkpoint, retention, and lock safety
+- `install.sh` — interactive installation script
 
 Development
 -----------

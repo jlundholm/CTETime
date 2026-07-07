@@ -96,8 +96,8 @@ def test_deployment_artifacts_exist_with_expected_basics():
     assert "listen 80;" in nginx_text
     assert "return 301 https://$host$request_uri;" in nginx_text
     assert "listen 443 ssl;" in nginx_text
-    assert "ssl_certificate /etc/letsencrypt/live/cte-time.example.com/fullchain.pem;" in nginx_text
-    assert "ssl_certificate_key /etc/letsencrypt/live/cte-time.example.com/privkey.pem;" in nginx_text
+    assert "ssl_certificate /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;" in nginx_text
+    assert "ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;" in nginx_text
     assert "proxy_pass http://127.0.0.1:8000;" in nginx_text
     assert "proxy_set_header Host $host;" in nginx_text
     assert "proxy_set_header X-Real-IP $remote_addr;" in nginx_text
